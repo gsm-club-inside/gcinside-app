@@ -3,6 +3,7 @@ import { ThemeProvider } from "next-themes";
 import localFont from "next/font/local";
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/components/QueryProvider";
+import CustomScrollbar from "@/components/CustomScrollbar";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <QueryProvider>
           <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
             {children}
+            <CustomScrollbar />
             <Toaster position="bottom-center" />
           </ThemeProvider>
         </QueryProvider>
