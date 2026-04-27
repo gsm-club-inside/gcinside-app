@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Sun, Moon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import ClubRequestDialog from "@/components/ClubRequestDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +66,7 @@ export default function Header({ initialUser }: { initialUser?: SessionUser | nu
           />
         </Link>
         <nav className="flex items-center gap-2">
+          <ClubRequestDialog isLoggedIn={!!user} />
           <button
             type="button"
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
