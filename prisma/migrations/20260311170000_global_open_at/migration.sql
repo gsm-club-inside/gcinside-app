@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Club" DROP COLUMN "openAt";
+
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "openAt" TIMESTAMP(3);

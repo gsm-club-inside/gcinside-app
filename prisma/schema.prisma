@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum ClubCreationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                           Int                   @id @default(autoincrement())
+  oauthId                      Int                   @unique
+  email                        String                @unique
+  name                         String
+  studentNumber                Int?
+  grade                        Int?
+  classNum                     Int?
+  number                       Int?
+  major                        String?
+  role                         Role                  @default(STUDENT)
+  refreshToken                 String?
+  enrollments                  Enrollment[]
+  clubCreationRequests         ClubCreationRequest[] @relation("ClubCreationRequester")
+  reviewedClubCreationRequests ClubCreationRequest[] @relation("ClubCreationReviewer")
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @updatedAt
+}
+
+model Club {
+  id              Int                  @id @default(autoincrement())
+  name            String
+  description     String
+  grade1Capacity  Int                  @default(0)
+  grade23Capacity Int                  @default(0)
+  isOpen          Boolean              @default(true)
+  enrollments     Enrollment[]
+  creationRequest ClubCreationRequest?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+model Settings {
+  id                Int       @id @default(1)
+  openAt            DateTime?
+  enrollmentEnabled Boolean   @default(false)
+}
+
+model Enrollment {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  clubId     Int
+  enrolledAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club       Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clubId])
+}
+
+model ClubCreationRequest {
+  id              Int                       @id @default(autoincrement())
+  requesterId     Int
+  reviewerId      Int?
+  clubId          Int?                      @unique
+  name            String
+  description     String
+  grade1Capacity  Int                       @default(0)
+  grade23Capacity Int                       @default(0)
+  isOpen          Boolean                   @default(true)
+  status          ClubCreationRequestStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  reviewedAt      DateTime?
+  requester       User                      @relation("ClubCreationRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reviewer        User?                     @relation("ClubCreationReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  club            Club?                     @relation(fields: [clubId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([requesterId, createdAt])
+}
+
+// ===== Anti-Abuse domain =====
+
+model AbuseEvent {
+  id         BigInt   @id @default(autoincrement())
+  userId     Int?
+  sessionId  String?
+  ipHash     String?
+  deviceHash String?
+  action     String
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([userId, createdAt])
+  @@index([ipHash, createdAt])
+}
+
+model RiskDecisionRecord {
+  id           BigInt    @id @default(autoincrement())
+  requestId    String    @unique
+  userId       Int?
+  sessionId    String?
+  ipHash       String?
+  deviceHash   String?
+  action       String
+  score        Float
+  decision     String
+  reasons      Json
+  signals      Json
+  ruleVersion  String
+  modelVersion String?
+  metadata     Json
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+
+  @@index([userId, createdAt])
+  @@index([decision, createdAt])
+  @@index([action, createdAt])
+}
+
+model SessionFingerprint {
+  id         BigInt   @id @default(autoincrement())
+  sessionId  String
+  ipHash     String?
+  deviceHash String?
+  userId     Int?
+  uaHash     String?
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([ipHash])
+  @@index([deviceHash])
+}
+
+model RateLimitBucket {
+  id           BigInt    @id @default(autoincrement())
+  scope        String
+  identity     String
+  action       String
+  count        Int
+  windowSec    Int
+  resetAt      DateTime
+  blocked      Boolean   @default(false)
+  blockedUntil DateTime?
+
+  @@unique([scope, action, identity])
+  @@index([resetAt])
+}
+
+model ChallengeAttempt {
+  id            BigInt    @id @default(autoincrement())
+  userId        Int?
+  sessionId     String?
+  ipHash        String?
+  challengeType String
+  token         String    @unique
+  issuedAt      DateTime  @default(now())
+  expiresAt     DateTime
+  verifiedAt    DateTime?
+  outcome       String?
+
+  @@index([userId])
+  @@index([challengeType, issuedAt])
+}
+
+model UserReputation {
+  userId      Int      @id
+  score       Float    @default(0.5)
+  allowlisted Boolean  @default(false)
+  blocklisted Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model IpReputation {
+  ipHash      String   @id
+  score       Float    @default(0.5)
+  allowlisted Boolean  @default(false)
+  blocklisted Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model DeviceReputation {
+  deviceHash  String   @id
+  score       Float    @default(0.5)
+  allowlisted Boolean  @default(false)
+  blocklisted Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model ContentSimilarityHash {
+  hash        String   @id
+  userId      Int?
+  occurrences Int      @default(1)
+  firstSeen   DateTime @default(now())
+  lastSeen    DateTime @default(now())
+
+  @@index([userId])
+  @@index([lastSeen])
+}
