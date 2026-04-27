@@ -60,6 +60,18 @@ model Settings {
   abuseCanaryRatio     Float     @default(0)
 }
 
+model AbuseModelArtifact {
+  id          Int       @id @default(autoincrement())
+  version     String    @unique
+  description String?
+  storageUri  String?
+  status      String    @default("CANDIDATE")
+  createdAt   DateTime  @default(now())
+  promotedAt  DateTime?
+
+  @@index([status, createdAt])
+}
+
 model Enrollment {
   id         Int      @id @default(autoincrement())
   userId     Int

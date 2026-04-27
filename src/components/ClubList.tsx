@@ -32,6 +32,58 @@ interface Settings {
   enrollmentEnabled: boolean;
 }
 
+interface EnrollmentChallenge {
+  type: "delay" | "captcha" | "re_auth" | "email_verification" | "admin_review";
+  token: string;
+  expiresAt: number;
+  payload?: { waitMs?: number; question?: string };
+}
+
+interface EnrollmentPayload {
+  clubId: number;
+  telemetry: ClientTelemetry;
+  challengeToken?: string;
+  challengeType?: EnrollmentChallenge["type"];
+  challengeResponse?: unknown;
+}
+
+async function submitEnrollment(payload: EnrollmentPayload): Promise<number> {
+  const res = await fetch("/api/enrollments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+
+  if (res.status === 428 && data.error === "challenge_required" && data.challenge) {
+    const challenge = data.challenge as EnrollmentChallenge;
+    const challengeResponse = await solveChallenge(challenge);
+    return submitEnrollment({
+      ...payload,
+      challengeToken: challenge.token,
+      challengeType: challenge.type,
+      challengeResponse,
+    });
+  }
+
+  if (!res.ok) throw new Error(data.error ?? "오류가 발생했습니다.");
+  return payload.clubId;
+}
+
+async function solveChallenge(challenge: EnrollmentChallenge): Promise<unknown> {
+  if (challenge.type === "delay") {
+    await new Promise((resolve) => setTimeout(resolve, challenge.payload?.waitMs ?? 2_000));
+    return { waited: true };
+  }
+
+  if (challenge.type === "captcha") {
+    const answer = window.prompt(`${challenge.payload?.question ?? ""} = ?`);
+    return { answer };
+  }
+
+  throw new Error("추가 인증이 필요한 요청입니다.");
+}
+
 export default function ClubList({
   isLoggedIn,
   initialClubs,
@@ -111,16 +163,7 @@ export default function ClubList({
   const globalOpenAt = settings?.openAt ?? null;
 
   const enrollMutation = useMutation({
-    mutationFn: ({ clubId, telemetry }: { clubId: number; telemetry: ClientTelemetry }) =>
-      fetch("/api/enrollments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clubId, telemetry }),
-      }).then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "오류가 발생했습니다.");
-        return clubId;
-      }),
+    mutationFn: submitEnrollment,
     onMutate: async ({ clubId }) => {
       await queryClient.cancelQueries({ queryKey: ["clubs"] });
       const prevClubs = queryClient.getQueryData<Club[]>(["clubs"]);

@@ -174,6 +174,15 @@ interface AbuseModelSettings {
   abuseCanaryRatio: number;
 }
 
+interface AbuseModelArtifact {
+  id: number;
+  version: string;
+  description: string | null;
+  storageUri: string | null;
+  status: string;
+  createdAt: string;
+}
+
 function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
@@ -183,6 +192,14 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
     candidateModel: settings.abuseCandidateModel ?? "",
     canaryPercent: Math.round((settings.abuseCanaryRatio ?? 0) * 100),
   });
+  const [newModel, setNewModel] = useState({ version: "", description: "", storageUri: "" });
+
+  const { data: modelData } = useQuery<{ models: AbuseModelArtifact[] }>({
+    queryKey: ["abuse-models"],
+    queryFn: () => fetch("/api/admin/abuse/models").then((r) => r.json()),
+    staleTime: 30_000,
+  });
+  const models = modelData?.models ?? [];
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -232,6 +249,26 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
     onError: (err: Error) => toast.error("적용 실패", { description: err.message }),
   });
 
+  const registerMutation = useMutation({
+    mutationFn: () =>
+      fetch("/api/admin/abuse/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newModel),
+      }).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "등록 실패");
+        return data as AbuseModelArtifact;
+      }),
+    onSuccess: (model) => {
+      toast.success("모델이 등록되었습니다.");
+      setNewModel({ version: "", description: "", storageUri: "" });
+      setForm((prev) => ({ ...prev, candidateModel: model.version }));
+      queryClient.invalidateQueries({ queryKey: ["abuse-models"] });
+    },
+    onError: (err: Error) => toast.error("등록 실패", { description: err.message }),
+  });
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
@@ -272,19 +309,82 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="abuseActiveModel">활성 모델</Label>
-          <Input
-            id="abuseActiveModel"
+          <Select
             value={form.activeModel}
-            onChange={(e) => setForm((prev) => ({ ...prev, activeModel: e.target.value }))}
-          />
+            onValueChange={(value) =>
+              setForm((prev) => ({ ...prev, activeModel: value ?? prev.activeModel }))
+            }
+          >
+            <SelectTrigger id="abuseActiveModel">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {models.map((model) => (
+                <SelectItem key={model.id} value={model.version}>
+                  {model.version}
+                </SelectItem>
+              ))}
+              {!models.some((model) => model.version === form.activeModel) && (
+                <SelectItem value={form.activeModel}>{form.activeModel}</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="abuseCandidateModel">후보 모델</Label>
+          <Select
+            value={form.candidateModel || "none"}
+            onValueChange={(value) =>
+              setForm((prev) => ({ ...prev, candidateModel: !value || value === "none" ? "" : value }))
+            }
+          >
+            <SelectTrigger id="abuseCandidateModel">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">없음</SelectItem>
+              {models.map((model) => (
+                <SelectItem key={model.id} value={model.version}>
+                  {model.version}
+                </SelectItem>
+              ))}
+              {form.candidateModel &&
+                !models.some((model) => model.version === form.candidateModel) && (
+                  <SelectItem value={form.candidateModel}>{form.candidateModel}</SelectItem>
+                )}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="rounded-lg border p-3">
+        <Label className="mb-2 block">모델 등록</Label>
+        <div className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_auto]">
           <Input
-            id="abuseCandidateModel"
-            value={form.candidateModel}
-            onChange={(e) => setForm((prev) => ({ ...prev, candidateModel: e.target.value }))}
+            aria-label="모델 버전"
+            placeholder="model-version"
+            value={newModel.version}
+            onChange={(e) => setNewModel((prev) => ({ ...prev, version: e.target.value }))}
           />
+          <Input
+            aria-label="설명"
+            placeholder="설명"
+            value={newModel.description}
+            onChange={(e) => setNewModel((prev) => ({ ...prev, description: e.target.value }))}
+          />
+          <Input
+            aria-label="저장 위치"
+            placeholder="s3://bucket/model"
+            value={newModel.storageUri}
+            onChange={(e) => setNewModel((prev) => ({ ...prev, storageUri: e.target.value }))}
+          />
+          <Button
+            variant="outline"
+            disabled={!newModel.version.trim() || registerMutation.isPending}
+            onClick={() => registerMutation.mutate()}
+          >
+            등록
+          </Button>
         </div>
       </div>
 

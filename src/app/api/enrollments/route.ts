@@ -7,6 +7,7 @@ import {
   buildRiskContext,
   checkAbuseRisk,
   abuseConfig,
+  getChallengeProvider,
   sanitizeTelemetry,
   settingsToAbuseRuntimeSettings,
 } from "@/lib/abuse";
@@ -41,13 +42,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "clubId is required" }, { status: 400 });
   }
   const telemetry = sanitizeTelemetry(body.telemetry);
+  const challengeToken = typeof body.challengeToken === "string" ? body.challengeToken : null;
+  const challengeType =
+    body.challengeType === "delay" ||
+    body.challengeType === "captcha" ||
+    body.challengeType === "re_auth" ||
+    body.challengeType === "email_verification"
+      ? body.challengeType
+      : null;
+
+  let challengeVerified = false;
+  if (challengeToken && challengeType) {
+    challengeVerified = await getChallengeProvider(challengeType).verify(
+      challengeToken,
+      body.challengeResponse,
+    );
+    if (!challengeVerified) {
+      return NextResponse.json({ error: "challenge_failed" }, { status: 428 });
+    }
+  }
 
   const now = Date.now();
   const lastAttempt = enrollRateLimit.get(session.userId);
-  if (lastAttempt && now - lastAttempt < RATE_LIMIT_MS) {
+  if (!challengeVerified && lastAttempt && now - lastAttempt < RATE_LIMIT_MS) {
     return NextResponse.json({ error: "잠시 후 다시 시도해주세요." }, { status: 429 });
   }
-  enrollRateLimit.set(session.userId, now);
+  if (!challengeVerified) enrollRateLimit.set(session.userId, now);
 
   const [user, settings] = await Promise.all([
     prisma.user.findUnique({
@@ -71,20 +91,23 @@ export async function POST(req: NextRequest) {
       telemetry,
       metadata: { clubId },
     });
-    const risk = await checkAbuseRisk(riskCtx, {
-      runtimeSettings: settingsToAbuseRuntimeSettings(settings),
-    });
-    if (risk.enforced) {
-      return NextResponse.json(
-        { error: "abuse_protection", level: risk.decision.level, reasons: risk.decision.reasons.map((r) => r.code) },
-        { status: 429 }
-      );
-    }
-    if (risk.challenge && abuseConfig.enableHardBlock) {
-      return NextResponse.json(
-        { error: "challenge_required", challenge: risk.challenge.type },
-        { status: 428 }
-      );
+    if (!challengeVerified) {
+      const risk = await checkAbuseRisk(riskCtx, {
+        runtimeSettings: settingsToAbuseRuntimeSettings(settings),
+      });
+      if (risk.enforced) {
+        return NextResponse.json(
+          { error: "abuse_protection", level: risk.decision.level, reasons: risk.decision.reasons.map((r) => r.code) },
+          { status: 429 }
+        );
+      }
+      if (risk.challenge) {
+        const issued = await getChallengeProvider(risk.challenge.type).issue(risk.decision);
+        return NextResponse.json(
+          { error: "challenge_required", challenge: issued },
+          { status: 428 }
+        );
+      }
     }
   } catch (err) {
     if (!abuseConfig.failOpen) {

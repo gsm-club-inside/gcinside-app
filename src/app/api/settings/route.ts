@@ -57,6 +57,22 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    await prisma.$transaction([
+      prisma.abuseModelArtifact.updateMany({
+        where: { status: "ACTIVE" },
+        data: { status: "ARCHIVED" },
+      }),
+      prisma.abuseModelArtifact.upsert({
+        where: { version: current.abuseCandidateModel },
+        create: {
+          version: current.abuseCandidateModel,
+          status: "ACTIVE",
+          promotedAt: new Date(),
+        },
+        update: { status: "ACTIVE", promotedAt: new Date() },
+      }),
+    ]);
+
     revalidateTag(TAGS.settings, {});
     return NextResponse.json(settings);
   }
