@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pin } from "lucide-react";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { createTelemetryCollector } from "@/lib/abuse/telemetry/collector.client";
+import type { ClientTelemetry } from "@/lib/abuse";
 
 const PIN_STORAGE_KEY = "pinned_clubs";
 const MAX_PINS = 3;
@@ -40,6 +42,7 @@ export default function ClubList({
   initialSettings: Settings;
 }) {
   const queryClient = useQueryClient();
+  const telemetry = useMemo(() => createTelemetryCollector(), []);
   const [now, setNow] = useState(() => new Date());
   const [pinnedIds, setPinnedIds] = useState<number[]>(() => {
     if (typeof window === "undefined") return [];
@@ -55,6 +58,12 @@ export default function ClubList({
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    telemetry.reset();
+    return telemetry.attach(document);
+  }, [isLoggedIn, telemetry]);
 
   const { data: me } = useQuery<{ grade: number | null } | null>({
     queryKey: ["me"],
@@ -102,17 +111,17 @@ export default function ClubList({
   const globalOpenAt = settings?.openAt ?? null;
 
   const enrollMutation = useMutation({
-    mutationFn: (clubId: number) =>
+    mutationFn: ({ clubId, telemetry }: { clubId: number; telemetry: ClientTelemetry }) =>
       fetch("/api/enrollments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clubId }),
+        body: JSON.stringify({ clubId, telemetry }),
       }).then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "오류가 발생했습니다.");
         return clubId;
       }),
-    onMutate: async (clubId) => {
+    onMutate: async ({ clubId }) => {
       await queryClient.cancelQueries({ queryKey: ["clubs"] });
       const prevClubs = queryClient.getQueryData<Club[]>(["clubs"]);
       queryClient.setQueryData<Club[]>(["clubs"], (old = []) =>
@@ -139,7 +148,7 @@ export default function ClubList({
       });
       return { prevClubs };
     },
-    onError: (err, _clubId, ctx) => {
+    onError: (err, _variables, ctx) => {
       if (ctx?.prevClubs) queryClient.setQueryData(["clubs"], ctx.prevClubs);
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
       toast.error("신청 실패", { description: err.message });
@@ -147,6 +156,7 @@ export default function ClubList({
     onSuccess: () => {
       toast.success("신청 완료!", { description: "동아리 신청이 완료되었습니다." });
       queryClient.invalidateQueries({ queryKey: ["clubs"] });
+      telemetry.reset();
     },
   });
 
@@ -172,7 +182,7 @@ export default function ClubList({
       window.location.href = "/api/auth/login";
       return;
     }
-    enrollMutation.mutate(clubId);
+    enrollMutation.mutate({ clubId, telemetry: telemetry.snapshot() });
   };
 
   if (clubsLoading) {
@@ -214,7 +224,7 @@ export default function ClubList({
         const isEnrolled = enrolledIds.has(club.id);
         const isNotOpenYet = !!globalOpenAt && now < new Date(globalOpenAt) && !club.isOpen;
         const isPinned = pinnedIds.includes(club.id);
-        const isPending = enrollMutation.isPending && enrollMutation.variables === club.id;
+        const isPending = enrollMutation.isPending && enrollMutation.variables?.clubId === club.id;
 
         const gradeCount =
           userGrade === 1

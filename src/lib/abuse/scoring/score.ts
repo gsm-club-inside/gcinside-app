@@ -83,6 +83,22 @@ export function combineScore(b: RiskScoreBreakdown): number {
   return totalWeight === 0 ? 0 : clamp01(total / totalWeight);
 }
 
+function applyAutomationFloors(ctx: RiskContext, signals: RiskSignal[], score: number): number {
+  const reasonCodes = new Set(signals.map((s) => s.reason.code));
+  const hasAutomationUa = [...reasonCodes].some((code) => code.startsWith("ua_match_"));
+  const hasNoTelemetry = reasonCodes.has("telemetry_absent") || reasonCodes.has("telemetry_empty");
+  const hasVeryFastSubmit = reasonCodes.has("submit_under_300ms");
+  const hasFastSubmit = hasVeryFastSubmit || reasonCodes.has("submit_under_800ms");
+  const noInteraction =
+    (ctx.telemetry?.keydownCount ?? 0) === 0 && (ctx.telemetry?.pointerMoveCount ?? 0) === 0;
+
+  if (hasAutomationUa && hasNoTelemetry) return Math.max(score, 0.9);
+  if (ctx.action === "vote" && hasVeryFastSubmit && noInteraction) return Math.max(score, 0.9);
+  if (ctx.action === "vote" && hasFastSubmit && hasNoTelemetry) return Math.max(score, 0.8);
+
+  return score;
+}
+
 function mapChallenge(level: RiskLevel, action: AbuseAction): ChallengeType | null {
   if (level !== "CHALLENGE") return null;
   if (action === "sign_in" || action === "sign_up") return "re_auth";
@@ -101,7 +117,7 @@ function aggregateReasons(signals: RiskSignal[]): RiskReason[] {
 
 export function buildDecision(inp: RiskScoreInput): RiskDecision {
   const breakdown = buildBreakdown(inp);
-  const score = combineScore(breakdown);
+  const score = applyAutomationFloors(inp.ctx, inp.signals, combineScore(breakdown));
   const level = decisionForScore(score);
   const reasons = aggregateReasons(inp.signals);
   return {

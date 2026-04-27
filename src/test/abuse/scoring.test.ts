@@ -42,4 +42,38 @@ describe("scoring", () => {
     expect(combineScore(b)).toBeGreaterThanOrEqual(0);
     expect(combineScore(b)).toBeLessThanOrEqual(1);
   });
+
+  it("promotes impossible enrollment automation to an enforced level", () => {
+    const signals: RiskSignal[] = [
+      { ruleId: "too_fast_submit", reason: { code: "submit_under_300ms", weight: 1.0 } },
+      { ruleId: "no_telemetry_submit", reason: { code: "telemetry_empty", weight: 0.7 } },
+    ];
+    const d = buildDecision({
+      ctx: {
+        ...ctx,
+        action: "vote",
+        telemetry: { submitElapsedMs: 120, keydownCount: 0, pointerMoveCount: 0 },
+      },
+      signals,
+      mlScore: null,
+    });
+
+    expect(d.score).toBeGreaterThanOrEqual(0.9);
+    expect(d.level).toBe("RATE_LIMIT");
+  });
+
+  it("promotes automation user-agents without telemetry", () => {
+    const signals: RiskSignal[] = [
+      { ruleId: "automation_user_agent", reason: { code: "ua_match_curl", weight: 1.0 } },
+      { ruleId: "no_telemetry_submit", reason: { code: "telemetry_absent", weight: 0.5 } },
+    ];
+    const d = buildDecision({
+      ctx: { ...ctx, telemetry: undefined, userAgent: "curl/8.0" },
+      signals,
+      mlScore: null,
+    });
+
+    expect(d.score).toBeGreaterThanOrEqual(0.9);
+    expect(d.level).toBe("RATE_LIMIT");
+  });
 });

@@ -3,7 +3,7 @@ import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { TAGS, getCachedSettings } from "@/lib/queries";
-import { buildRiskContext, checkAbuseRisk, abuseConfig } from "@/lib/abuse";
+import { buildRiskContext, checkAbuseRisk, abuseConfig, sanitizeTelemetry } from "@/lib/abuse";
 
 const enrollRateLimit = new Map<number, number>();
 const RATE_LIMIT_MS = 5_000;
@@ -29,10 +29,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { clubId } = await req.json();
+  const body = await req.json();
+  const { clubId } = body;
   if (!clubId) {
     return NextResponse.json({ error: "clubId is required" }, { status: 400 });
   }
+  const telemetry = sanitizeTelemetry(body.telemetry);
 
   const now = Date.now();
   const lastAttempt = enrollRateLimit.get(session.userId);
@@ -42,11 +44,21 @@ export async function POST(req: NextRequest) {
   enrollRateLimit.set(session.userId, now);
 
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { createdAt: true },
+    });
+    const accountAgeMinutes = user
+      ? Math.max(0, Math.floor((Date.now() - user.createdAt.getTime()) / 60_000))
+      : null;
+
     const riskCtx = buildRiskContext({
       action: "vote",
       request: req,
       userId: session.userId,
       sessionId: session.email ?? null,
+      accountAgeMinutes,
+      telemetry,
       metadata: { clubId },
     });
     const risk = await checkAbuseRisk(riskCtx);

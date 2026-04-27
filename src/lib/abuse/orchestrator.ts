@@ -61,9 +61,10 @@ export async function checkAbuseRisk(
 
   // 2) rate limit pre-check
   const rl = await checkContextRateLimits(enrichedCtx, deps.limiter);
+  const ctxWithVelocity = withRateLimitVelocity(enrichedCtx, rl.decisions);
 
   // 3) rules
-  const signals = await deps.rules.evaluate(enrichedCtx);
+  const signals = await deps.rules.evaluate(ctxWithVelocity);
 
   // 4) AI inference (best-effort)
   let mlScore: number | null = null;
@@ -71,7 +72,7 @@ export async function checkAbuseRisk(
   let aiFailureReason: string | null = null;
   if (!opts.skipAi && abuseConfig.aiInference.enabled) {
     try {
-      const r = await deps.ai.predict(enrichedCtx, requestId);
+      const r = await deps.ai.predict(ctxWithVelocity, requestId);
       if (r.ok) {
         mlScore = r.data.mlScore;
         modelVersion = r.data.modelVersion;
@@ -84,7 +85,7 @@ export async function checkAbuseRisk(
   }
 
   // 5) decision
-  let decision = buildDecision({ ctx: enrichedCtx, signals, mlScore, modelVersion });
+  let decision = buildDecision({ ctx: ctxWithVelocity, signals, mlScore, modelVersion });
 
   // 6) rate-limit override
   if (!rl.allowed) {
@@ -109,6 +110,25 @@ export async function checkAbuseRisk(
   }
 
   return { decision, rateLimited: !rl.allowed, enforced, challenge: challengeFromDecision(decision) };
+}
+
+function withRateLimitVelocity(ctx: RiskContext, decisions: { count: number; windowSec: number }[]): RiskContext {
+  if (decisions.length === 0) return ctx;
+
+  const max1m = Math.max(
+    ctx.recentRequestCount1m ?? 0,
+    ...decisions.filter((d) => d.windowSec <= 60).map((d) => d.count),
+  );
+  const max10m = Math.max(
+    ctx.recentRequestCount10m ?? 0,
+    ...decisions.filter((d) => d.windowSec <= 600).map((d) => d.count),
+  );
+
+  return {
+    ...ctx,
+    recentRequestCount1m: max1m,
+    recentRequestCount10m: max10m,
+  };
 }
 
 function randomId(): string {
