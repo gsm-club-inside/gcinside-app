@@ -1,5 +1,5 @@
-const OAUTH_BASE = "https://oauth.data.hellogsm.kr";
-const USERINFO_BASE = "https://oauth-userinfo.data.hellogsm.kr";
+const OAUTH_BASE = process.env.OAUTH_BASE_URL ?? "https://oauth.authorization.datagsm.kr";
+const USERINFO_BASE = process.env.OAUTH_USERINFO_BASE_URL ?? "https://oauth.resource.datagsm.kr";
 
 export function generateCodeVerifier(): string {
   const array = new Uint8Array(32);
