@@ -3,6 +3,7 @@ export * from "./config";
 export * from "./hash";
 export * from "./context";
 export * from "./orchestrator";
+export * from "./runtime-settings";
 export { defaultRuleEngine, RuleEngine } from "./rules/engine";
 export { builtinRules } from "./rules/builtins";
 export type { AbuseRule } from "./rules/types";

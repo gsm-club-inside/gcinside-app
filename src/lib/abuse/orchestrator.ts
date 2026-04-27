@@ -5,6 +5,12 @@ import { defaultAiInferenceClient, type AiInferenceClient } from "./ai-client";
 import { checkContextRateLimits, defaultRateLimiter, type RateLimiter } from "./rate-limit";
 import { defaultReputationStore, type ReputationStore } from "./reputation";
 import { auditDecision, defaultAuditSink, type AuditSink } from "./audit";
+import { defaultDecisionRepo, type DecisionRepo } from "./repo/decisions";
+import {
+  chooseModelForRequest,
+  DEFAULT_ABUSE_RUNTIME_SETTINGS,
+  type AbuseRuntimeSettings,
+} from "./runtime-settings";
 import type { RiskContext, RiskDecision } from "./types";
 
 export interface AbuseDeps {
@@ -13,6 +19,7 @@ export interface AbuseDeps {
   limiter: RateLimiter;
   reputation: ReputationStore;
   audit: AuditSink;
+  decisions: DecisionRepo;
 }
 
 export const defaultDeps: AbuseDeps = {
@@ -21,11 +28,13 @@ export const defaultDeps: AbuseDeps = {
   limiter: defaultRateLimiter,
   reputation: defaultReputationStore,
   audit: defaultAuditSink,
+  decisions: defaultDecisionRepo,
 };
 
 export interface CheckOptions {
   requestId?: string;
   skipAi?: boolean;
+  runtimeSettings?: Partial<AbuseRuntimeSettings>;
 }
 
 export interface CheckResult {
@@ -51,6 +60,10 @@ export async function checkAbuseRisk(
   deps: AbuseDeps = defaultDeps,
 ): Promise<CheckResult> {
   const requestId = opts.requestId ?? randomId();
+  const runtimeSettings: AbuseRuntimeSettings = {
+    ...DEFAULT_ABUSE_RUNTIME_SETTINGS,
+    ...(opts.runtimeSettings ?? {}),
+  };
 
   // 1) reputation augmentation
   let repScore = ctx.reputationScore;
@@ -70,11 +83,16 @@ export async function checkAbuseRisk(
   let mlScore: number | null = null;
   let modelVersion: string | null = null;
   let aiFailureReason: string | null = null;
-  if (!opts.skipAi && abuseConfig.aiInference.enabled) {
+  let shadowMlScore: number | null = null;
+  const shouldCallAi =
+    !opts.skipAi && abuseConfig.aiInference.enabled && runtimeSettings.aiMode !== "OFF";
+  if (shouldCallAi) {
     try {
-      const r = await deps.ai.predict(ctxWithVelocity, requestId);
+      const requestedModel = chooseModelForRequest(runtimeSettings);
+      const r = await deps.ai.predict(ctxWithVelocity, requestId, requestedModel);
       if (r.ok) {
-        mlScore = r.data.mlScore;
+        shadowMlScore = r.data.mlScore;
+        mlScore = runtimeSettings.aiMode === "ENFORCE" ? r.data.mlScore : null;
         modelVersion = r.data.modelVersion;
       } else {
         aiFailureReason = r.error.reason;
@@ -86,6 +104,18 @@ export async function checkAbuseRisk(
 
   // 5) decision
   let decision = buildDecision({ ctx: ctxWithVelocity, signals, mlScore, modelVersion });
+  decision = {
+    ...decision,
+    metadata: {
+      ...decision.metadata,
+      abuseLearningEnabled: runtimeSettings.learningEnabled,
+      aiMode: runtimeSettings.aiMode,
+      activeModel: runtimeSettings.activeModel,
+      candidateModel: runtimeSettings.candidateModel,
+      canaryRatio: runtimeSettings.canaryRatio,
+      ...(shadowMlScore !== null && runtimeSettings.aiMode === "SHADOW" && { shadowMlScore }),
+    },
+  };
 
   // 6) rate-limit override
   if (!rl.allowed) {
@@ -98,6 +128,10 @@ export async function checkAbuseRisk(
   }
 
   const enforced = shouldEnforce(decision);
+
+  if (runtimeSettings.learningEnabled) {
+    await deps.decisions.save(decision, requestId);
+  }
 
   await auditDecision(decision, { requestId, aiFailureReason, rateLimitDecisions: rl.decisions });
 

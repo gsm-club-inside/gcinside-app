@@ -1,0 +1,5 @@
+ALTER TABLE "Settings" ADD COLUMN "abuseLearningEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "Settings" ADD COLUMN "abuseAiMode" TEXT NOT NULL DEFAULT 'SHADOW';
+ALTER TABLE "Settings" ADD COLUMN "abuseActiveModel" TEXT NOT NULL DEFAULT 'mock-risk-v1';
+ALTER TABLE "Settings" ADD COLUMN "abuseCandidateModel" TEXT;
+ALTER TABLE "Settings" ADD COLUMN "abuseCanaryRatio" DOUBLE PRECISION NOT NULL DEFAULT 0;

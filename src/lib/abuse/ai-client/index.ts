@@ -4,6 +4,7 @@ import type { ClientTelemetry, RiskContext, RiskSubject } from "../types";
 export interface AiInferenceRequest {
   requestId: string;
   action: string;
+  modelVersion?: string;
   subject: RiskSubject;
   features: {
     requestCount1m: number;
@@ -30,7 +31,7 @@ export interface AiInferenceFailure {
 }
 
 export interface AiInferenceClient {
-  predict(ctx: RiskContext, requestId: string): Promise<{ ok: true; data: AiInferenceResponse } | { ok: false; error: AiInferenceFailure }>;
+  predict(ctx: RiskContext, requestId: string, modelVersion?: string): Promise<{ ok: true; data: AiInferenceResponse } | { ok: false; error: AiInferenceFailure }>;
 }
 
 function buildFeatures(ctx: RiskContext): AiInferenceRequest["features"] {
@@ -52,6 +53,7 @@ class HttpAiInferenceClient implements AiInferenceClient {
   async predict(
     ctx: RiskContext,
     requestId: string,
+    modelVersion?: string,
   ): Promise<{ ok: true; data: AiInferenceResponse } | { ok: false; error: AiInferenceFailure }> {
     const cfg = abuseConfig.aiInference;
     if (!cfg.enabled) return { ok: false, error: { reason: "disabled" } };
@@ -59,6 +61,7 @@ class HttpAiInferenceClient implements AiInferenceClient {
     const body: AiInferenceRequest = {
       requestId,
       action: ctx.action,
+      ...(modelVersion && { modelVersion }),
       subject: ctx.subject,
       features: buildFeatures(ctx),
     };

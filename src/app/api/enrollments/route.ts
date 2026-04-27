@@ -3,7 +3,13 @@ import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { TAGS, getCachedSettings } from "@/lib/queries";
-import { buildRiskContext, checkAbuseRisk, abuseConfig, sanitizeTelemetry } from "@/lib/abuse";
+import {
+  buildRiskContext,
+  checkAbuseRisk,
+  abuseConfig,
+  sanitizeTelemetry,
+  settingsToAbuseRuntimeSettings,
+} from "@/lib/abuse";
 
 const enrollRateLimit = new Map<number, number>();
 const RATE_LIMIT_MS = 5_000;
@@ -43,11 +49,15 @@ export async function POST(req: NextRequest) {
   }
   enrollRateLimit.set(session.userId, now);
 
-  try {
-    const user = await prisma.user.findUnique({
+  const [user, settings] = await Promise.all([
+    prisma.user.findUnique({
       where: { id: session.userId },
       select: { createdAt: true },
-    });
+    }),
+    getCachedSettings(),
+  ]);
+
+  try {
     const accountAgeMinutes = user
       ? Math.max(0, Math.floor((Date.now() - user.createdAt.getTime()) / 60_000))
       : null;
@@ -61,7 +71,9 @@ export async function POST(req: NextRequest) {
       telemetry,
       metadata: { clubId },
     });
-    const risk = await checkAbuseRisk(riskCtx);
+    const risk = await checkAbuseRisk(riskCtx, {
+      runtimeSettings: settingsToAbuseRuntimeSettings(settings),
+    });
     if (risk.enforced) {
       return NextResponse.json(
         { error: "abuse_protection", level: risk.decision.level, reasons: risk.decision.reasons.map((r) => r.code) },
@@ -85,13 +97,10 @@ export async function POST(req: NextRequest) {
     const grade = session.grade;
     if (!grade) throw new Error("GRADE_REQUIRED");
 
-    const [club, settings] = await Promise.all([
-      prisma.club.findUnique({
+    const club = await prisma.club.findUnique({
         where: { id: Number(clubId) },
         select: { id: true, grade1Capacity: true, grade23Capacity: true, isOpen: true },
-      }),
-      getCachedSettings(),
-    ]);
+      });
 
     if (!club) throw new Error("CLUB_NOT_FOUND");
 

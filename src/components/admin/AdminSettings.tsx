@@ -4,10 +4,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function utcToKstInput(utcStr: string | null): string {
   if (!utcStr) return "";
@@ -156,6 +164,160 @@ function RefreshUsersButton() {
   );
 }
 
+type AbuseAiMode = "OFF" | "SHADOW" | "ENFORCE";
+
+interface AbuseModelSettings {
+  abuseLearningEnabled: boolean;
+  abuseAiMode: AbuseAiMode;
+  abuseActiveModel: string;
+  abuseCandidateModel: string | null;
+  abuseCanaryRatio: number;
+}
+
+function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({
+    learningEnabled: settings.abuseLearningEnabled,
+    aiMode: settings.abuseAiMode,
+    activeModel: settings.abuseActiveModel,
+    candidateModel: settings.abuseCandidateModel ?? "",
+    canaryPercent: Math.round((settings.abuseCanaryRatio ?? 0) * 100),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          abuseLearningEnabled: form.learningEnabled,
+          abuseAiMode: form.aiMode,
+          abuseActiveModel: form.activeModel,
+          abuseCandidateModel: form.candidateModel,
+          abuseCanaryRatio: form.canaryPercent / 100,
+        }),
+      }).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "저장 실패");
+        return data;
+      }),
+    onSuccess: () => {
+      toast.success("AI 매크로 방지 설정이 저장되었습니다.");
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+    },
+    onError: (err: Error) => toast.error("저장 실패", { description: err.message }),
+  });
+
+  const promoteMutation = useMutation({
+    mutationFn: () =>
+      fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "promoteCandidate" }),
+      }).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "적용 실패");
+        return data as AbuseModelSettings;
+      }),
+    onSuccess: (data) => {
+      toast.success("후보 모델을 활성 모델로 적용했습니다.");
+      setForm((prev) => ({
+        ...prev,
+        activeModel: data.abuseActiveModel,
+        candidateModel: data.abuseCandidateModel ?? "",
+        canaryPercent: Math.round((data.abuseCanaryRatio ?? 0) * 100),
+      }));
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+    },
+    onError: (err: Error) => toast.error("적용 실패", { description: err.message }),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="abuseAiMode">탐지 모드</Label>
+          <Select
+            value={form.aiMode}
+            onValueChange={(value) => setForm((prev) => ({ ...prev, aiMode: value as AbuseAiMode }))}
+          >
+            <SelectTrigger id="abuseAiMode">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="OFF">OFF</SelectItem>
+              <SelectItem value="SHADOW">SHADOW</SelectItem>
+              <SelectItem value="ENFORCE">ENFORCE</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="abuseCanaryRatio">후보 모델 카나리 적용률</Label>
+          <Input
+            id="abuseCanaryRatio"
+            type="number"
+            min={0}
+            max={100}
+            value={form.canaryPercent}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                canaryPercent: Math.max(0, Math.min(100, Number(e.target.value))),
+              }))
+            }
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="abuseActiveModel">활성 모델</Label>
+          <Input
+            id="abuseActiveModel"
+            value={form.activeModel}
+            onChange={(e) => setForm((prev) => ({ ...prev, activeModel: e.target.value }))}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="abuseCandidateModel">후보 모델</Label>
+          <Input
+            id="abuseCandidateModel"
+            value={form.candidateModel}
+            onChange={(e) => setForm((prev) => ({ ...prev, candidateModel: e.target.value }))}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="abuseLearningEnabled"
+            checked={form.learningEnabled}
+            onCheckedChange={(checked) =>
+              setForm((prev) => ({ ...prev, learningEnabled: Boolean(checked) }))
+            }
+          />
+          <Label htmlFor="abuseLearningEnabled" className="cursor-pointer font-normal">
+            학습 데이터 수집
+          </Label>
+        </div>
+        <div className="ml-auto flex gap-2">
+          <Button
+            variant="outline"
+            disabled={!form.candidateModel.trim() || promoteMutation.isPending}
+            onClick={() => promoteMutation.mutate()}
+          >
+            {promoteMutation.isPending ? "적용 중..." : "후보 모델 적용"}
+          </Button>
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? "저장 중..." : "저장"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminSettings() {
   const { data: settings, isLoading } = useQuery({
     queryKey: ["settings"],
@@ -187,6 +349,34 @@ export default function AdminSettings() {
         </CardHeader>
         <CardContent>
           <RefreshUsersButton />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">AI 매크로 방지</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading || !settings ? (
+            <Skeleton className="h-32 w-full" />
+          ) : (
+            <AbuseModelSettingsForm
+              key={[
+                settings.abuseLearningEnabled,
+                settings.abuseAiMode,
+                settings.abuseActiveModel,
+                settings.abuseCandidateModel,
+                settings.abuseCanaryRatio,
+              ].join(":")}
+              settings={{
+                abuseLearningEnabled: settings.abuseLearningEnabled ?? true,
+                abuseAiMode: settings.abuseAiMode ?? "SHADOW",
+                abuseActiveModel: settings.abuseActiveModel ?? "mock-risk-v1",
+                abuseCandidateModel: settings.abuseCandidateModel ?? null,
+                abuseCanaryRatio: settings.abuseCanaryRatio ?? 0,
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

@@ -50,9 +50,14 @@ model Club {
 }
 
 model Settings {
-  id                Int       @id @default(1)
-  openAt            DateTime?
-  enrollmentEnabled Boolean   @default(false)
+  id                   Int       @id @default(1)
+  openAt               DateTime?
+  enrollmentEnabled    Boolean   @default(false)
+  abuseLearningEnabled Boolean   @default(true)
+  abuseAiMode          String    @default("SHADOW")
+  abuseActiveModel     String    @default("mock-risk-v1")
+  abuseCandidateModel  String?
+  abuseCanaryRatio     Float     @default(0)
 }
 
 model Enrollment {
