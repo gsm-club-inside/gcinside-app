@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { apiUrl } from "@/lib/client-api";
 import { cn } from "@/lib/utils";
 
 export interface SessionUser {
@@ -37,7 +38,7 @@ export default function Header({ initialUser }: { initialUser?: SessionUser | nu
   const { data: user } = useQuery<SessionUser | null>({
     queryKey: ["me"],
     queryFn: () =>
-      fetch("/api/auth/me")
+      fetch(apiUrl("/api/auth/me"))
         .then((r) => r.json())
         .then((data) => data.user ?? null),
     staleTime: 5 * 60_000,
@@ -45,7 +46,7 @@ export default function Header({ initialUser }: { initialUser?: SessionUser | nu
   });
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch(apiUrl("/api/auth/logout"), { method: "POST" });
     queryClient.setQueryData(["me"], null);
     toast.success("로그아웃되었습니다.");
     router.push("/");

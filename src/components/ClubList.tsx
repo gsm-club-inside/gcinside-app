@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { createTelemetryCollector } from "@/lib/abuse/telemetry/collector.client";
 import type { ClientTelemetry } from "@/lib/abuse";
+import { apiUrl } from "@/lib/client-api";
 import { cn } from "@/lib/utils";
 
 const PIN_STORAGE_KEY = "pinned_clubs";
@@ -49,7 +50,7 @@ interface EnrollmentPayload {
 }
 
 async function submitEnrollment(payload: EnrollmentPayload): Promise<number> {
-  const res = await fetch("/api/enrollments", {
+  const res = await fetch(apiUrl("/api/enrollments"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -117,13 +118,20 @@ export default function ClubList({
   useEffect(() => {
     if (!isLoggedIn) return;
     telemetry.reset();
-    return telemetry.attach(document);
+    const detachTelemetry = telemetry.attach(document);
+    if (process.env.NEXT_PUBLIC_E2E_HARNESS === "1") {
+      document.documentElement.dataset.e2eHydrated = "true";
+    }
+    return () => {
+      delete document.documentElement.dataset.e2eHydrated;
+      detachTelemetry();
+    };
   }, [isLoggedIn, telemetry]);
 
   const { data: me } = useQuery<{ grade: number | null } | null>({
-    queryKey: ["me"],
+    queryKey: ["me-grade"],
     queryFn: () =>
-      fetch("/api/auth/me")
+      fetch(apiUrl("/api/auth/me"))
         .then((r) => r.json())
         .then((data) => data.user ?? null),
     initialData:
@@ -139,7 +147,7 @@ export default function ClubList({
 
   const { data: clubs = [], isLoading: clubsLoading } = useQuery<Club[]>({
     queryKey: ["clubs"],
-    queryFn: () => fetch("/api/clubs").then((r) => r.json()),
+    queryFn: () => fetch(apiUrl("/api/clubs")).then((r) => r.json()),
     initialData: initialClubs,
     staleTime: 30_000,
   });
@@ -147,7 +155,7 @@ export default function ClubList({
   const { data: enrolledIds = new Set<number>() } = useQuery<Set<number>>({
     queryKey: ["enrollments"],
     queryFn: () =>
-      fetch("/api/enrollments")
+      fetch(apiUrl("/api/enrollments"))
         .then((r) => r.json())
         .then((data: { clubId: number }[]) => new Set(data.map((e) => e.clubId))),
     enabled: isLoggedIn,
@@ -156,7 +164,7 @@ export default function ClubList({
 
   const { data: settings } = useQuery<{ openAt: string | null }>({
     queryKey: ["settings"],
-    queryFn: () => fetch("/api/settings").then((r) => r.json()),
+    queryFn: () => fetch(apiUrl("/api/settings")).then((r) => r.json()),
     initialData: {
       ...initialSettings,
       openAt: initialSettings.openAt
