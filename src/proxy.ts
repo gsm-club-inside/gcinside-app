@@ -6,7 +6,8 @@ const sessionOptions = {
   cookieName: "club_session",
   password: process.env.SESSION_SECRET as string,
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    secure:
+      process.env.SESSION_COOKIE_SECURE === "false" ? false : process.env.NODE_ENV === "production",
     httpOnly: true,
     sameSite: "lax" as const,
   },
