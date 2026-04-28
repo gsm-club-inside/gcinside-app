@@ -30,14 +30,17 @@ export default async function HomePage({
     <>
       <Header initialUser={initialUser} />
       <ErrorToast error={error} />
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-        <section className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-normal">창체동아리</h1>
-          <p className="text-muted-foreground text-sm">
-            원하는 동아리를 비교하고 신청 현황을 확인하세요.
-          </p>
-        </section>
-        <ClubList isLoggedIn={!!session.userId} initialClubs={clubs} initialSettings={settings} />
+      <main className="mx-auto max-w-4xl px-6 py-8">
+        <h1 className="mb-1 text-2xl font-bold">창체동아리 목록</h1>
+        <p className="text-muted-foreground mb-6 text-sm">
+          원하는 창체동아리를 선택해 선착순으로 신청하세요.
+        </p>
+        <ClubList
+          isLoggedIn={!!session.userId}
+          initialUserGrade={session.grade ?? null}
+          initialClubs={clubs}
+          initialSettings={settings}
+        />
       </main>
     </>
   );

@@ -1,5 +1,6 @@
 const OAUTH_BASE = process.env.OAUTH_BASE_URL ?? "https://oauth.authorization.datagsm.kr";
 const USERINFO_BASE = process.env.OAUTH_USERINFO_BASE_URL ?? "https://oauth.resource.datagsm.kr";
+const OAUTH_SCOPE = process.env.OAUTH_SCOPE?.trim();
 
 export function generateCodeVerifier(): string {
   const array = new Uint8Array(32);
@@ -37,6 +38,7 @@ export async function buildAuthorizationUrl(codeVerifier: string, state: string)
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
   });
+  if (OAUTH_SCOPE) params.set("scope", OAUTH_SCOPE);
   return `${OAUTH_BASE}/v1/oauth/authorize?${params.toString()}`;
 }
 
@@ -46,6 +48,17 @@ export interface TokenResponse {
   expires_in: number;
   refresh_token: string;
   scope: string;
+}
+
+const OAUTH_SCOPE_ALIASES: Record<string, readonly string[]> = {
+  "self:read": ["self:read", "datagsm:self_read"],
+};
+
+export function hasOAuthScope(tokenScope: string | undefined, requiredScope: string): boolean {
+  const scopes = new Set((tokenScope ?? "").split(/\s+/).filter(Boolean));
+  const acceptedScopes = OAUTH_SCOPE_ALIASES[requiredScope] ?? [requiredScope];
+
+  return acceptedScopes.some((scope) => scopes.has(scope));
 }
 
 export async function exchangeCodeForToken(
@@ -101,14 +114,19 @@ export interface DatagsmUser {
 }
 
 export async function fetchUserInfo(accessToken: string): Promise<DatagsmUser> {
-  const res = await fetch(`${USERINFO_BASE}/userinfo`, {
+  const url = `${USERINFO_BASE}/userinfo`;
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   const json = await res.json();
 
   if (!res.ok) {
-    throw new Error(`UserInfo fetch failed: ${res.status} - ${json?.message ?? ""}`);
+    throw new Error(
+      `UserInfo fetch failed: ${res.status} from ${url} - ${
+        json?.error_description ?? json?.message ?? json?.error ?? ""
+      }`
+    );
   }
 
   return (json?.data ?? json) as DatagsmUser;

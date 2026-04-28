@@ -50,5 +50,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   await prisma.enrollment.delete({ where: { id: Number(id) } });
   revalidateTag(TAGS.enrollments, {});
+  revalidateTag(TAGS.clubs, {});
   return NextResponse.json({ ok: true });
 }

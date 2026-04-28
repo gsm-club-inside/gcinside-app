@@ -61,7 +61,7 @@ export default function Header({ initialUser }: { initialUser?: SessionUser | nu
             alt="GCinside"
             width={120}
             height={68}
-            className="-mt-[19px] dark:invert"
+            className="-mt-[19px] h-auto dark:invert"
             priority
           />
         </Link>

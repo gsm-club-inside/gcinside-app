@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
-import { exchangeCodeForToken, fetchUserInfo, isAdminEmail } from "@/lib/oauth";
+import { exchangeCodeForToken, fetchUserInfo, hasOAuthScope, isAdminEmail } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma";
 import { TAGS } from "@/lib/queries";
 
@@ -23,6 +23,13 @@ export async function GET(req: NextRequest) {
   let step = "token_exchange";
   try {
     const tokens = await exchangeCodeForToken(code, session.codeVerifier);
+
+    step = "validate_scope";
+    if (!hasOAuthScope(tokens.scope, "self:read")) {
+      throw new Error(
+        `OAuth token missing required scope self:read. Received scope: ${tokens.scope || "(empty)"}`
+      );
+    }
 
     step = "fetch_user_info";
     const oauthUser = await fetchUserInfo(tokens.access_token);

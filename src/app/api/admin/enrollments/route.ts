@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
       data: { userId: Number(userId), clubId: Number(clubId) },
     });
     revalidateTag(TAGS.enrollments, {});
+    revalidateTag(TAGS.clubs, {});
     return NextResponse.json(enrollment, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "";

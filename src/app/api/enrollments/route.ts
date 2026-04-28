@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   if (challengeToken && challengeType) {
     challengeVerified = await getChallengeProvider(challengeType).verify(
       challengeToken,
-      body.challengeResponse,
+      body.challengeResponse
     );
     if (!challengeVerified) {
       return NextResponse.json({ error: "challenge_failed" }, { status: 428 });
@@ -97,7 +97,11 @@ export async function POST(req: NextRequest) {
       });
       if (risk.enforced) {
         return NextResponse.json(
-          { error: "abuse_protection", level: risk.decision.level, reasons: risk.decision.reasons.map((r) => r.code) },
+          {
+            error: "abuse_protection",
+            level: risk.decision.level,
+            reasons: risk.decision.reasons.map((r) => r.code),
+          },
           { status: 429 }
         );
       }
@@ -121,9 +125,9 @@ export async function POST(req: NextRequest) {
     if (!grade) throw new Error("GRADE_REQUIRED");
 
     const club = await prisma.club.findUnique({
-        where: { id: Number(clubId) },
-        select: { id: true, grade1Capacity: true, grade23Capacity: true, isOpen: true },
-      });
+      where: { id: Number(clubId) },
+      select: { id: true, grade1Capacity: true, grade23Capacity: true, isOpen: true },
+    });
 
     if (!club) throw new Error("CLUB_NOT_FOUND");
 
@@ -153,6 +157,7 @@ export async function POST(req: NextRequest) {
     );
 
     revalidateTag(TAGS.enrollments, {});
+    revalidateTag(TAGS.clubs, {});
     return NextResponse.json(enrollment, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "UNKNOWN";

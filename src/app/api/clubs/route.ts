@@ -20,7 +20,7 @@ export async function GET() {
         grade23: enrollments.filter((e) => e.user.grade === 2 || e.user.grade === 3).length,
       },
     })),
-    { headers: { "Cache-Control": "public, s-maxage=5, stale-while-revalidate=30" } }
+    { headers: { "Cache-Control": "no-store" } }
   );
 }
 
