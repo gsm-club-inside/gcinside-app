@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { exchangeCodeForToken, fetchUserInfo, hasOAuthScope, isAdminEmail } from "@/lib/oauth";
 import { prisma } from "@/lib/prisma";
 import { TAGS } from "@/lib/queries";
+import { publicUrl } from "@/lib/public-url";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -13,11 +14,11 @@ export async function GET(req: NextRequest) {
   const session = await getSession();
 
   if (!state || state !== session.oauthState) {
-    return NextResponse.redirect(new URL("/?error=invalid_state", req.url));
+    return NextResponse.redirect(publicUrl("/?error=invalid_state", req));
   }
 
   if (!code || !session.codeVerifier) {
-    return NextResponse.redirect(new URL("/?error=missing_code", req.url));
+    return NextResponse.redirect(publicUrl("/?error=missing_code", req));
   }
 
   let step = "token_exchange";
@@ -84,9 +85,9 @@ export async function GET(req: NextRequest) {
     await session.save();
     revalidateTag(TAGS.users, {});
 
-    return NextResponse.redirect(new URL(role === "ADMIN" ? "/admin" : "/", req.url));
+    return NextResponse.redirect(publicUrl(role === "ADMIN" ? "/admin" : "/", req));
   } catch (err) {
     console.error(`OAuth callback error at step [${step}]:`, err);
-    return NextResponse.redirect(new URL("/?error=auth_failed", req.url));
+    return NextResponse.redirect(publicUrl("/?error=auth_failed", req));
   }
 }

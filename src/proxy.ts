@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { SessionData } from "@/lib/session";
+import { publicUrl } from "@/lib/public-url";
 
 const sessionOptions = {
   cookieName: "club_session",
@@ -22,10 +23,10 @@ export async function proxy(req: NextRequest) {
   // /admin/* 경로는 어드민만 접근 가능
   if (pathname.startsWith("/admin")) {
     if (!session.userId) {
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(publicUrl("/", req));
     }
     if (session.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/?error=forbidden", req.url));
+      return NextResponse.redirect(publicUrl("/?error=forbidden", req));
     }
   }
 
