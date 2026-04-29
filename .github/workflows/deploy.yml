@@ -18,6 +18,12 @@ jobs:
   verify:
     name: verify
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gcinside_test
+      SESSION_SECRET: ci-deploy-secret-must-be-32-chars!
+      OAUTH_CLIENT_ID: dummy-client-id
+      OAUTH_REDIRECT_URI: http://localhost:3000/api/auth/callback
+      ADMIN_EMAILS: admin@example.com
 
     steps:
       - uses: actions/checkout@v4
