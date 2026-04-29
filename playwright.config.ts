@@ -7,6 +7,10 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 30_000,
   expect: { timeout: 5_000 },
+  // All specs share a single mock-api server (shared mutable state). Run them
+  // serially so resets/configures from one spec don't clobber another's run.
+  workers: 1,
+  fullyParallel: false,
   use: {
     baseURL: `http://localhost:${appPort}`,
     trace: "on-first-retry",

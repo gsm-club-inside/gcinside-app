@@ -7,7 +7,7 @@ export interface DecisionRepo {
   byUser(userId: number, limit: number): Promise<RiskDecision[]>;
 }
 
-class InMemoryDecisionRepo implements DecisionRepo {
+export class InMemoryDecisionRepo implements DecisionRepo {
   private items: { d: RiskDecision; requestId: string }[] = [];
 
   async save(d: RiskDecision, requestId: string) {
@@ -25,7 +25,7 @@ class InMemoryDecisionRepo implements DecisionRepo {
   }
 }
 
-class HybridDecisionRepo implements DecisionRepo {
+export class HybridDecisionRepo implements DecisionRepo {
   constructor(private memory: InMemoryDecisionRepo) {}
 
   async save(d: RiskDecision, requestId: string) {

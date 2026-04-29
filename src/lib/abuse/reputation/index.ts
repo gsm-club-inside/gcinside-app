@@ -9,7 +9,7 @@ export interface ReputationStore {
   isBlocklisted(scope: ReputationScope, identity: string): Promise<boolean>;
 }
 
-class InMemoryReputationStore implements ReputationStore {
+export class InMemoryReputationStore implements ReputationStore {
   private values = new Map<string, number>();
   private allow = new Set<string>();
   private block = new Set<string>();
@@ -38,6 +38,14 @@ class InMemoryReputationStore implements ReputationStore {
   }
   async isBlocklisted(scope: ReputationScope, id: string) {
     return this.block.has(this.k(scope, id));
+  }
+
+  /** test-only: allow seeding without going through public API */
+  __seedAllow(scope: ReputationScope, id: string) {
+    this.allow.add(this.k(scope, id));
+  }
+  __seedBlock(scope: ReputationScope, id: string) {
+    this.block.add(this.k(scope, id));
   }
 }
 

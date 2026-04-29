@@ -7,7 +7,8 @@ on:
     branches: [master]
 
 jobs:
-  ci:
+  unit:
+    name: lint · typecheck · unit
     runs-on: ubuntu-latest
 
     permissions:
@@ -34,7 +35,7 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test with coverage
+      - name: Test with coverage (lib/** thresholds enforced)
         run: npm run test:coverage
 
       - name: Coverage report comment
@@ -44,3 +45,53 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           json-summary-path: coverage/coverage-summary.json
           lcov-file: coverage/lcov.info
+
+  e2e:
+    name: playwright e2e
+    runs-on: ubuntu-latest
+    needs: unit
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          VERSION=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run e2e
+        run: npm run e2e
+        env:
+          CI: "1"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

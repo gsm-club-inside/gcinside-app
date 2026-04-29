@@ -2,15 +2,25 @@ import http from "node:http";
 
 const port = Number(process.env.MOCK_API_PORT ?? 3211);
 
-const state = {
+const initialState = () => ({
   attempts: [],
   enrolled: false,
-};
+  requireChallenge: true,
+  clubRequests: [],
+  clubRequestsByAdmin: [],
+  adminRequestActions: [],
+  enrollmentsForProfile: [],
+  cancelledEnrollmentIds: [],
+  // role for /api/auth/me; flip to "ADMIN" for admin scenarios
+  role: "STUDENT",
+});
+
+let state = initialState();
 
 function json(res, status, body) {
   res.writeHead(status, {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
   });
@@ -32,20 +42,46 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── test harness control endpoints ──────────────────────────────────
   if (req.method === "POST" && url.pathname === "/__mock__/reset") {
-    state.attempts = [];
-    state.enrolled = false;
+    state = initialState();
     json(res, 200, { ok: true });
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/__mock__/attempts") {
-    json(res, 200, { attempts: state.attempts, enrolled: state.enrolled });
+  if (req.method === "POST" && url.pathname === "/__mock__/configure") {
+    const body = await readJson(req);
+    if (typeof body.requireChallenge === "boolean") state.requireChallenge = body.requireChallenge;
+    if (typeof body.role === "string") state.role = body.role;
+    if (Array.isArray(body.clubRequestsByAdmin))
+      state.clubRequestsByAdmin = body.clubRequestsByAdmin;
+    if (Array.isArray(body.enrollmentsForProfile))
+      state.enrollmentsForProfile = body.enrollmentsForProfile;
+    json(res, 200, { ok: true, state });
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/__mock__/attempts") {
+    json(res, 200, {
+      attempts: state.attempts,
+      enrolled: state.enrolled,
+      clubRequests: state.clubRequests,
+      adminRequestActions: state.adminRequestActions,
+      cancelledEnrollmentIds: state.cancelledEnrollmentIds,
+    });
+    return;
+  }
+
+  // ── application endpoints ───────────────────────────────────────────
   if (req.method === "GET" && url.pathname === "/api/auth/me") {
-    json(res, 200, { user: { id: 1, name: "매크로 테스트", role: "STUDENT", grade: 1 } });
+    json(res, 200, {
+      user: {
+        id: 1,
+        name: state.role === "ADMIN" ? "관리자" : "매크로 테스트",
+        role: state.role,
+        grade: 1,
+      },
+    });
     return;
   }
 
@@ -80,7 +116,7 @@ const server = http.createServer(async (req, res) => {
     const body = await readJson(req);
     state.attempts.push(body);
 
-    if (!body.challengeToken) {
+    if (state.requireChallenge && !body.challengeToken) {
       json(res, 428, {
         error: "challenge_required",
         challenge: {
@@ -95,6 +131,56 @@ const server = http.createServer(async (req, res) => {
 
     state.enrolled = true;
     json(res, 201, { id: 1, clubId: body.clubId });
+    return;
+  }
+
+  // ── club-request user flow ─────────────────────────────────────────
+  if (req.method === "GET" && url.pathname === "/api/club-requests") {
+    json(res, 200, state.clubRequests);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/club-requests") {
+    const body = await readJson(req);
+    const created = {
+      id: state.clubRequests.length + 1,
+      ...body,
+      status: "PENDING",
+      rejectionReason: null,
+      createdAt: new Date().toISOString(),
+      club: null,
+    };
+    state.clubRequests.push(created);
+    json(res, 201, created);
+    return;
+  }
+
+  // ── admin: club-requests review ────────────────────────────────────
+  if (req.method === "GET" && url.pathname === "/api/admin/club-requests") {
+    json(res, 200, state.clubRequestsByAdmin);
+    return;
+  }
+
+  const adminMatch = url.pathname.match(/^\/api\/admin\/club-requests\/(\d+)$/);
+  if (req.method === "PATCH" && adminMatch) {
+    const id = Number(adminMatch[1]);
+    const body = await readJson(req);
+    state.adminRequestActions.push({ id, ...body });
+    const nextStatus = body.action === "approve" ? "APPROVED" : "REJECTED";
+    state.clubRequestsByAdmin = state.clubRequestsByAdmin.map((r) =>
+      r.id === id ? { ...r, status: nextStatus, rejectionReason: body.rejectionReason ?? null } : r
+    );
+    json(res, 200, { ok: true });
+    return;
+  }
+
+  // ── profile: cancel enrollment ─────────────────────────────────────
+  const enrollmentMatch = url.pathname.match(/^\/api\/enrollments\/(\d+)$/);
+  if (req.method === "DELETE" && enrollmentMatch) {
+    const id = Number(enrollmentMatch[1]);
+    state.cancelledEnrollmentIds.push(id);
+    state.enrollmentsForProfile = state.enrollmentsForProfile.filter((e) => e.id !== id);
+    json(res, 200, { ok: true });
     return;
   }
 

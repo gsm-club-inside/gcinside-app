@@ -12,7 +12,20 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "json-summary"],
-      exclude: ["node_modules/**", ".next/**", "src/test/**", "**/*.config.*", "prisma/**"],
+      include: ["src/lib/**/*.{ts,tsx}"],
+      exclude: [
+        "node_modules/**",
+        ".next/**",
+        "src/test/**",
+        "**/*.config.*",
+        "prisma/**",
+        "src/lib/**/types.ts",
+      ],
+      thresholds: {
+        lines: 90,
+        functions: 90,
+        branches: 80,
+      },
     },
   },
   resolve: {
