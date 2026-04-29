@@ -55,14 +55,26 @@ jobs:
     environment: production
 
     steps:
-      - name: Resolve deploy ref
-        id: deploy-ref
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Resolve deployment revision
+        id: revision
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Create source archive
         run: |
-          if [ -n "${{ inputs.ref }}" ]; then
-            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          fi
+          set -eu
+
+          tar \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='.next-e2e' \
+            --exclude='coverage' \
+            --exclude='test-results' \
+            -czf /tmp/gcinside-app.tar.gz .
 
       - name: Configure SSH
         env:
@@ -105,9 +117,12 @@ jobs:
       - name: Deploy over SSH
         env:
           DEPLOY_ROOT: ${{ secrets.DEPLOY_ROOT }}
-          DEPLOY_REF: ${{ steps.deploy-ref.outputs.ref }}
         run: |
           set -eu
+
+          DEPLOY_REF="${{ steps.revision.outputs.sha }}"
+
+          scp /tmp/gcinside-app.tar.gz gcinside-production:/tmp/gcinside-app-${DEPLOY_REF}.tar.gz
 
           ssh gcinside-production \
             "DEPLOY_ROOT='${DEPLOY_ROOT:-}' DEPLOY_REF='$DEPLOY_REF' bash -s" <<'REMOTE'
@@ -117,19 +132,22 @@ jobs:
           APP_DIR="$ROOT/gcinside-app"
           INFRA_DIR="$ROOT/gcinside-infra"
           IMAGE_TAG="$(printf '%s' "$DEPLOY_REF" | cut -c1-12)"
+          ARCHIVE="/tmp/gcinside-app-${DEPLOY_REF}.tar.gz"
 
-          cd "$APP_DIR"
-          git fetch origin main
-          git reset --hard "$DEPLOY_REF"
+          mkdir -p "$APP_DIR"
+          find "$APP_DIR" -mindepth 1 -maxdepth 1 \
+            ! -name '.env' \
+            ! -name '.next' \
+            ! -name 'node_modules' \
+            -exec rm -rf {} +
+          tar -xzf "$ARCHIVE" -C "$APP_DIR"
+          rm -f "$ARCHIVE"
 
           cd "$INFRA_DIR"
-          git fetch origin master
-          git checkout master
-          git pull --ff-only origin master
 
           sh scripts/preflight.sh
 
-          GCINSIDE_IMAGE_TAG="$IMAGE_TAG" docker compose build app
-          GCINSIDE_IMAGE_TAG="$IMAGE_TAG" docker compose up -d app
-          docker compose ps app caddy
+          GCINSIDE_IMAGE_TAG="$IMAGE_TAG" sudo docker compose build app
+          GCINSIDE_IMAGE_TAG="$IMAGE_TAG" sudo docker compose up -d --no-deps app
+          sudo docker compose ps app caddy
           REMOTE
