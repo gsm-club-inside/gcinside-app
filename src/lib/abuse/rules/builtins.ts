@@ -23,8 +23,10 @@ export const newAccountVolumeRule: AbuseRule = {
   evaluate(ctx) {
     const age = ctx.accountAgeMinutes ?? Number.POSITIVE_INFINITY;
     const c = ctx.recentRequestCount10m ?? 0;
-    if (age < 60 && c >= 20) return [signal(this.id, "new_account_burst", 1.0, `age=${age}m, req=${c}`)];
-    if (age < 1440 && c >= 50) return [signal(this.id, "young_account_volume", 0.6, `age=${age}m, req=${c}`)];
+    if (age < 60 && c >= 20)
+      return [signal(this.id, "new_account_burst", 1.0, `age=${age}m, req=${c}`)];
+    if (age < 1440 && c >= 50)
+      return [signal(this.id, "young_account_volume", 0.6, `age=${age}m, req=${c}`)];
     return [];
   },
 };
@@ -108,8 +110,20 @@ export const automationUaRule: AbuseRule = {
   evaluate(ctx) {
     const ua = (ctx.userAgent ?? "").toLowerCase();
     if (!ua) return [signal(this.id, "ua_missing", 0.5)];
-    const bad = ["headless", "phantom", "selenium", "puppeteer", "playwright", "curl", "wget", "python-requests", "httpclient", "bot"];
-    for (const k of bad) if (ua.includes(k)) return [signal(this.id, `ua_match_${k}`, 1.0, ua.slice(0, 64))];
+    const bad = [
+      "headless",
+      "phantom",
+      "selenium",
+      "puppeteer",
+      "playwright",
+      "curl",
+      "wget",
+      "python-requests",
+      "httpclient",
+      "bot",
+    ];
+    for (const k of bad)
+      if (ua.includes(k)) return [signal(this.id, `ua_match_${k}`, 1.0, ua.slice(0, 64))];
     return [];
   },
 };

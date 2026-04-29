@@ -51,13 +51,17 @@ function challengeFromDecision(d: RiskDecision) {
 
 function shouldEnforce(decision: RiskDecision): boolean {
   if (abuseConfig.shadowMode) return false;
-  return decision.level === "RATE_LIMIT" || decision.level === "TEMP_BLOCK" || decision.level === "HARD_BLOCK";
+  return (
+    decision.level === "RATE_LIMIT" ||
+    decision.level === "TEMP_BLOCK" ||
+    decision.level === "HARD_BLOCK"
+  );
 }
 
 export async function checkAbuseRisk(
   ctx: RiskContext,
   opts: CheckOptions = {},
-  deps: AbuseDeps = defaultDeps,
+  deps: AbuseDeps = defaultDeps
 ): Promise<CheckResult> {
   const requestId = opts.requestId ?? randomId();
   const runtimeSettings: AbuseRuntimeSettings = {
@@ -143,19 +147,27 @@ export async function checkAbuseRisk(
     });
   }
 
-  return { decision, rateLimited: !rl.allowed, enforced, challenge: challengeFromDecision(decision) };
+  return {
+    decision,
+    rateLimited: !rl.allowed,
+    enforced,
+    challenge: challengeFromDecision(decision),
+  };
 }
 
-function withRateLimitVelocity(ctx: RiskContext, decisions: { count: number; windowSec: number }[]): RiskContext {
+function withRateLimitVelocity(
+  ctx: RiskContext,
+  decisions: { count: number; windowSec: number }[]
+): RiskContext {
   if (decisions.length === 0) return ctx;
 
   const max1m = Math.max(
     ctx.recentRequestCount1m ?? 0,
-    ...decisions.filter((d) => d.windowSec <= 60).map((d) => d.count),
+    ...decisions.filter((d) => d.windowSec <= 60).map((d) => d.count)
   );
   const max10m = Math.max(
     ctx.recentRequestCount10m ?? 0,
-    ...decisions.filter((d) => d.windowSec <= 600).map((d) => d.count),
+    ...decisions.filter((d) => d.windowSec <= 600).map((d) => d.count)
   );
 
   return {
@@ -168,5 +180,7 @@ function withRateLimitVelocity(ctx: RiskContext, decisions: { count: number; win
 function randomId(): string {
   const arr = new Uint8Array(8);
   crypto.getRandomValues(arr);
-  return Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(arr)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }

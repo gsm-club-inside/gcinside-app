@@ -21,7 +21,11 @@ export interface BuildContextInput {
   metadata?: Record<string, unknown>;
 }
 
-export function buildRiskSubject(headers: Headers, userId?: number | null, sessionId?: string | null): RiskSubject {
+export function buildRiskSubject(
+  headers: Headers,
+  userId?: number | null,
+  sessionId?: string | null
+): RiskSubject {
   const ip = clientIpFromHeaders(headers);
   const fp = fingerprintFromHeaders(headers, sessionId);
   return {

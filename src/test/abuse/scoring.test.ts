@@ -25,9 +25,20 @@ describe("scoring", () => {
       { ruleId: "x", reason: { code: "burst_requests_60", weight: 1.0 } },
       { ruleId: "y", reason: { code: "submit_under_300ms", weight: 0.9 } },
     ];
-    const d = buildDecision({ ctx: { ...ctx, recentRequestCount1m: 70, telemetry: { submitElapsedMs: 80, keydownCount: 0 } }, signals, mlScore: 0.9, modelVersion: "test" });
+    const d = buildDecision({
+      ctx: {
+        ...ctx,
+        recentRequestCount1m: 70,
+        telemetry: { submitElapsedMs: 80, keydownCount: 0 },
+      },
+      signals,
+      mlScore: 0.9,
+      modelVersion: "test",
+    });
     expect(d.score).toBeGreaterThan(0.4);
-    expect(["MONITOR", "CHALLENGE", "RATE_LIMIT", "TEMP_BLOCK", "MANUAL_REVIEW"]).toContain(d.level);
+    expect(["MONITOR", "CHALLENGE", "RATE_LIMIT", "TEMP_BLOCK", "MANUAL_REVIEW"]).toContain(
+      d.level
+    );
   });
 
   it("threshold mapping is monotonic", () => {

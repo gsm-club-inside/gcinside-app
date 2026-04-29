@@ -34,7 +34,10 @@ describe("rule engine", () => {
   });
 
   it("flags automation user-agents", async () => {
-    const sigs = await defaultRuleEngine.evaluate({ ...baseCtx, userAgent: "Mozilla python-requests/2.32" });
+    const sigs = await defaultRuleEngine.evaluate({
+      ...baseCtx,
+      userAgent: "Mozilla python-requests/2.32",
+    });
     expect(sigs.some((s) => s.reason.code.startsWith("ua_match_"))).toBe(true);
   });
 

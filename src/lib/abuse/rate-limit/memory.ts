@@ -1,6 +1,9 @@
 import type { RateLimitDecision, RateLimitKey, RateLimiter } from "./types";
 
-interface Bucket { count: number; resetAt: number }
+interface Bucket {
+  count: number;
+  resetAt: number;
+}
 
 function keyOf(k: RateLimitKey): string {
   return `${k.scope}:${k.action}:${k.identity}`;
@@ -43,5 +46,6 @@ export class InMemoryRateLimiter implements RateLimiter {
 }
 
 const globalForLimiter = globalThis as unknown as { abuseLimiter?: RateLimiter };
-export const defaultRateLimiter: RateLimiter = globalForLimiter.abuseLimiter ?? new InMemoryRateLimiter();
+export const defaultRateLimiter: RateLimiter =
+  globalForLimiter.abuseLimiter ?? new InMemoryRateLimiter();
 if (!globalForLimiter.abuseLimiter) globalForLimiter.abuseLimiter = defaultRateLimiter;

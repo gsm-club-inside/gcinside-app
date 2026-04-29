@@ -276,7 +276,9 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
           <Label htmlFor="abuseAiMode">탐지 모드</Label>
           <Select
             value={form.aiMode}
-            onValueChange={(value) => setForm((prev) => ({ ...prev, aiMode: value as AbuseAiMode }))}
+            onValueChange={(value) =>
+              setForm((prev) => ({ ...prev, aiMode: value as AbuseAiMode }))
+            }
           >
             <SelectTrigger id="abuseAiMode">
               <SelectValue />
@@ -335,7 +337,10 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
           <Select
             value={form.candidateModel || "none"}
             onValueChange={(value) =>
-              setForm((prev) => ({ ...prev, candidateModel: !value || value === "none" ? "" : value }))
+              setForm((prev) => ({
+                ...prev,
+                candidateModel: !value || value === "none" ? "" : value,
+              }))
             }
           >
             <SelectTrigger id="abuseCandidateModel">

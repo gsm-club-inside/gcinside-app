@@ -11,7 +11,13 @@ export interface AbuseConfig {
     retries: number;
     enabled: boolean;
   };
-  thresholds: { allow: number; monitor: number; challenge: number; rateLimit: number; hardBlock: number };
+  thresholds: {
+    allow: number;
+    monitor: number;
+    challenge: number;
+    rateLimit: number;
+    hardBlock: number;
+  };
   weights: {
     rule: number;
     behavior: number;
@@ -52,18 +58,18 @@ export const abuseConfig: AbuseConfig = {
     enabled: boolEnv("AI_INFERENCE_ENABLED", true),
   },
   thresholds: {
-    allow: 0.30,
+    allow: 0.3,
     monitor: 0.55,
     challenge: 0.75,
-    rateLimit: 0.90,
-    hardBlock: 1.00,
+    rateLimit: 0.9,
+    hardBlock: 1.0,
   },
   weights: {
-    rule: 0.30,
+    rule: 0.3,
     behavior: 0.15,
-    velocity: 0.20,
-    reputation: 0.10,
-    contentSimilarity: 0.10,
+    velocity: 0.2,
+    reputation: 0.1,
+    contentSimilarity: 0.1,
     ml: 0.15,
   },
   rateLimit: {

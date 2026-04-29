@@ -18,7 +18,10 @@ class InMemoryDecisionRepo implements DecisionRepo {
     return this.items.slice(0, limit).map((x) => x.d);
   }
   async byUser(userId: number, limit: number) {
-    return this.items.filter((x) => x.d.subject.userId === userId).slice(0, limit).map((x) => x.d);
+    return this.items
+      .filter((x) => x.d.subject.userId === userId)
+      .slice(0, limit)
+      .map((x) => x.d);
   }
 }
 

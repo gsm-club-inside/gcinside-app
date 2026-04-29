@@ -9,11 +9,15 @@ import type { AiInferenceClient } from "@/lib/abuse/ai-client";
 import type { RiskContext } from "@/lib/abuse/types";
 
 const failingAi: AiInferenceClient = {
-  async predict() { return { ok: false, error: { reason: "timeout" } }; },
+  async predict() {
+    return { ok: false, error: { reason: "timeout" } };
+  },
 };
 
 const okAi: AiInferenceClient = {
-  async predict() { return { ok: true, data: { mlScore: 0.9, modelVersion: "test", reasons: [] } }; },
+  async predict() {
+    return { ok: true, data: { mlScore: 0.9, modelVersion: "test", reasons: [] } };
+  },
 };
 
 const baseCtx: RiskContext = {
@@ -25,28 +29,52 @@ const baseCtx: RiskContext = {
 
 describe("orchestrator AI fallback", () => {
   it("falls back to rule-only when AI fails", async () => {
-    const r = await checkAbuseRisk(baseCtx, {}, {
-      rules: defaultRuleEngine, ai: failingAi, limiter: new InMemoryRateLimiter(),
-      reputation: defaultReputationStore, audit: defaultAuditSink, decisions: defaultDecisionRepo,
-    });
+    const r = await checkAbuseRisk(
+      baseCtx,
+      {},
+      {
+        rules: defaultRuleEngine,
+        ai: failingAi,
+        limiter: new InMemoryRateLimiter(),
+        reputation: defaultReputationStore,
+        audit: defaultAuditSink,
+        decisions: defaultDecisionRepo,
+      }
+    );
     expect(r.decision.modelVersion).toBeNull();
     expect(r.decision.breakdown.mlScore).toBeNull();
   });
 
   it("incorporates ml score when AI succeeds", async () => {
-    const r = await checkAbuseRisk(baseCtx, { runtimeSettings: { aiMode: "ENFORCE" } }, {
-      rules: defaultRuleEngine, ai: okAi, limiter: new InMemoryRateLimiter(),
-      reputation: defaultReputationStore, audit: defaultAuditSink, decisions: defaultDecisionRepo,
-    });
+    const r = await checkAbuseRisk(
+      baseCtx,
+      { runtimeSettings: { aiMode: "ENFORCE" } },
+      {
+        rules: defaultRuleEngine,
+        ai: okAi,
+        limiter: new InMemoryRateLimiter(),
+        reputation: defaultReputationStore,
+        audit: defaultAuditSink,
+        decisions: defaultDecisionRepo,
+      }
+    );
     expect(r.decision.modelVersion).toBe("test");
     expect(r.decision.breakdown.mlScore).toBe(0.9);
   });
 
   it("records AI score without enforcing it in shadow mode", async () => {
-    const r = await checkAbuseRisk(baseCtx, { runtimeSettings: { aiMode: "SHADOW" } }, {
-      rules: defaultRuleEngine, ai: okAi, limiter: new InMemoryRateLimiter(),
-      reputation: defaultReputationStore, audit: defaultAuditSink, decisions: defaultDecisionRepo,
-    });
+    const r = await checkAbuseRisk(
+      baseCtx,
+      { runtimeSettings: { aiMode: "SHADOW" } },
+      {
+        rules: defaultRuleEngine,
+        ai: okAi,
+        limiter: new InMemoryRateLimiter(),
+        reputation: defaultReputationStore,
+        audit: defaultAuditSink,
+        decisions: defaultDecisionRepo,
+      }
+    );
     expect(r.decision.modelVersion).toBe("test");
     expect(r.decision.breakdown.mlScore).toBeNull();
     expect(r.decision.metadata.shadowMlScore).toBe(0.9);

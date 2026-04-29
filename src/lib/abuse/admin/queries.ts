@@ -20,7 +20,9 @@ export async function ruleHitCounts(limit = 200): Promise<Record<string, number>
 }
 
 export async function activeRules() {
-  return defaultRuleEngine.list().map((r) => ({ id: r.id, name: r.name, weight: r.weight, enabled: r.enabled }));
+  return defaultRuleEngine
+    .list()
+    .map((r) => ({ id: r.id, name: r.name, weight: r.weight, enabled: r.enabled }));
 }
 
 export async function unblockUser(userId: number, action: string) {

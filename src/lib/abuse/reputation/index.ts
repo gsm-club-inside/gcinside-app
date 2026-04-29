@@ -42,5 +42,6 @@ class InMemoryReputationStore implements ReputationStore {
 }
 
 const g = globalThis as unknown as { abuseReputation?: ReputationStore };
-export const defaultReputationStore: ReputationStore = g.abuseReputation ?? new InMemoryReputationStore();
+export const defaultReputationStore: ReputationStore =
+  g.abuseReputation ?? new InMemoryReputationStore();
 if (!g.abuseReputation) g.abuseReputation = defaultReputationStore;

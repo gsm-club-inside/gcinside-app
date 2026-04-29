@@ -45,10 +45,10 @@ if (risk.enforced) return new Response("rate limited", { status: 429 });
 
 ## 교체 지점 (interface)
 
-| 부품 | 기본 | 교체 대상 |
-|---|---|---|
-| `RateLimiter` | InMemoryRateLimiter | Redis 구현 (`gcinside-infra`) |
-| `ReputationStore` | InMemoryReputationStore | PG / Redis 구현 |
-| `DecisionRepo` | InMemoryDecisionRepo | Prisma + RiskDecisionRecord |
-| `AuditSink` | ConsoleAuditSink | DB sink + queue producer (`gcinside-abuse-worker`) |
-| `AiInferenceClient` | HTTP fetch | gRPC / batch / 다른 transport |
+| 부품                | 기본                    | 교체 대상                                          |
+| ------------------- | ----------------------- | -------------------------------------------------- |
+| `RateLimiter`       | InMemoryRateLimiter     | Redis 구현 (`gcinside-infra`)                      |
+| `ReputationStore`   | InMemoryReputationStore | PG / Redis 구현                                    |
+| `DecisionRepo`      | InMemoryDecisionRepo    | Prisma + RiskDecisionRecord                        |
+| `AuditSink`         | ConsoleAuditSink        | DB sink + queue producer (`gcinside-abuse-worker`) |
+| `AiInferenceClient` | HTTP fetch              | gRPC / batch / 다른 transport                      |

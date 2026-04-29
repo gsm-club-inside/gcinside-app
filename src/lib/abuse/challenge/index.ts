@@ -96,7 +96,12 @@ class MathCaptchaChallenge implements ChallengeProvider {
       expiresAt,
       answer: String(a + b),
     });
-    return { type: "captcha", token, expiresAt, payload: { provider: "math", question: `${a} + ${b}` } };
+    return {
+      type: "captcha",
+      token,
+      expiresAt,
+      payload: { provider: "math", question: `${a} + ${b}` },
+    };
   }
   async verify(token: string, response: unknown): Promise<boolean> {
     const c = takeChallenge(token, "captcha");
@@ -112,15 +117,23 @@ class MathCaptchaChallenge implements ChallengeProvider {
 class AdminReviewChallenge implements ChallengeProvider {
   type: ChallengeType = "admin_review";
   async issue(_d: RiskDecision): Promise<ChallengeIssued> {
-    return { type: "admin_review", token: cryptoRandom(), expiresAt: Date.now() + 24 * 60 * 60_000 };
+    return {
+      type: "admin_review",
+      token: cryptoRandom(),
+      expiresAt: Date.now() + 24 * 60 * 60_000,
+    };
   }
-  async verify(): Promise<boolean> { return false; }
+  async verify(): Promise<boolean> {
+    return false;
+  }
 }
 
 function cryptoRandom(): string {
   const arr = new Uint8Array(16);
   crypto.getRandomValues(arr);
-  return Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(arr)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function takeChallenge(token: string, type: ChallengeType): StoredChallenge | null {

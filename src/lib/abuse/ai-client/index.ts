@@ -31,7 +31,11 @@ export interface AiInferenceFailure {
 }
 
 export interface AiInferenceClient {
-  predict(ctx: RiskContext, requestId: string, modelVersion?: string): Promise<{ ok: true; data: AiInferenceResponse } | { ok: false; error: AiInferenceFailure }>;
+  predict(
+    ctx: RiskContext,
+    requestId: string,
+    modelVersion?: string
+  ): Promise<{ ok: true; data: AiInferenceResponse } | { ok: false; error: AiInferenceFailure }>;
 }
 
 function buildFeatures(ctx: RiskContext): AiInferenceRequest["features"] {
@@ -53,7 +57,7 @@ class HttpAiInferenceClient implements AiInferenceClient {
   async predict(
     ctx: RiskContext,
     requestId: string,
-    modelVersion?: string,
+    modelVersion?: string
   ): Promise<{ ok: true; data: AiInferenceResponse } | { ok: false; error: AiInferenceFailure }> {
     const cfg = abuseConfig.aiInference;
     if (!cfg.enabled) return { ok: false, error: { reason: "disabled" } };
@@ -102,7 +106,10 @@ class HttpAiInferenceClient implements AiInferenceClient {
       } catch (err) {
         clearTimeout(t);
         const msg = err instanceof Error ? err.message : String(err);
-        lastErr = { reason: msg.includes("aborted") ? "timeout" : "exception", detail: msg.slice(0, 120) };
+        lastErr = {
+          reason: msg.includes("aborted") ? "timeout" : "exception",
+          detail: msg.slice(0, 120),
+        };
       }
     }
     return { ok: false, error: lastErr };

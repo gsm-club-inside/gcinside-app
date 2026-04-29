@@ -8,14 +8,16 @@ export type AbuseAction =
   | "upload"
   | "report";
 
-export type RiskLevel = "ALLOW" | "MONITOR" | "CHALLENGE" | "RATE_LIMIT" | "TEMP_BLOCK" | "HARD_BLOCK" | "MANUAL_REVIEW";
+export type RiskLevel =
+  | "ALLOW"
+  | "MONITOR"
+  | "CHALLENGE"
+  | "RATE_LIMIT"
+  | "TEMP_BLOCK"
+  | "HARD_BLOCK"
+  | "MANUAL_REVIEW";
 
-export type ChallengeType =
-  | "delay"
-  | "re_auth"
-  | "email_verification"
-  | "captcha"
-  | "admin_review";
+export type ChallengeType = "delay" | "re_auth" | "email_verification" | "captcha" | "admin_review";
 
 export interface RiskSubject {
   userId?: number | null;

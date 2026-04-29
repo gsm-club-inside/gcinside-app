@@ -76,7 +76,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
 
       const current = await prisma.clubCreationRequest.findUnique({ where: { id: requestId } });
-      if (!current) return NextResponse.json({ error: "요청을 찾을 수 없습니다." }, { status: 404 });
+      if (!current)
+        return NextResponse.json({ error: "요청을 찾을 수 없습니다." }, { status: 404 });
       if (current.status !== "PENDING") {
         return NextResponse.json({ error: "이미 처리된 요청입니다." }, { status: 409 });
       }

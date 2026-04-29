@@ -12,12 +12,17 @@ export interface ContextRateLimitResult {
   hardestScope: RateLimitDecision | null;
 }
 
-export async function checkContextRateLimits(ctx: RiskContext, limiter: RateLimiter = defaultRateLimiter): Promise<ContextRateLimitResult> {
+export async function checkContextRateLimits(
+  ctx: RiskContext,
+  limiter: RateLimiter = defaultRateLimiter
+): Promise<ContextRateLimitResult> {
   const cfg = abuseConfig.rateLimit.perAction[ctx.action];
   if (!cfg) return { allowed: true, decisions: [], hardestScope: null };
   const decisions: RateLimitDecision[] = [];
   const candidates = [
-    ctx.subject.userId !== null && ctx.subject.userId !== undefined ? { scope: "user" as const, identity: String(ctx.subject.userId) } : null,
+    ctx.subject.userId !== null && ctx.subject.userId !== undefined
+      ? { scope: "user" as const, identity: String(ctx.subject.userId) }
+      : null,
     ctx.subject.ipHash ? { scope: "ip" as const, identity: ctx.subject.ipHash } : null,
     ctx.subject.sessionId ? { scope: "session" as const, identity: ctx.subject.sessionId } : null,
     ctx.subject.deviceHash ? { scope: "device" as const, identity: ctx.subject.deviceHash } : null,
@@ -28,7 +33,13 @@ export async function checkContextRateLimits(ctx: RiskContext, limiter: RateLimi
   for (const c of candidates) {
     const k = { ...c, action: ctx.action };
     if (await limiter.isBlocked(k)) {
-      const d: RateLimitDecision = { allowed: false, count: cfg.limit + 1, limit: cfg.limit, windowSec: cfg.windowSec, resetAt: 0 };
+      const d: RateLimitDecision = {
+        allowed: false,
+        count: cfg.limit + 1,
+        limit: cfg.limit,
+        windowSec: cfg.windowSec,
+        resetAt: 0,
+      };
       decisions.push(d);
       hardest = d;
       allowed = false;

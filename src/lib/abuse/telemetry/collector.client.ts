@@ -50,9 +50,15 @@ export function createTelemetryCollector(): TelemetryHandle {
     if (state.lastKeyAt !== null) state.intervals.push(Math.min(60_000, now - state.lastKeyAt));
     state.lastKeyAt = now;
   };
-  const onPaste = (_e: ClipboardEvent) => { state.pasteUsed = true; };
-  const onFocusIn = () => { state.focusCount++; };
-  const onFocusOut = () => { state.blurCount++; };
+  const onPaste = (_e: ClipboardEvent) => {
+    state.pasteUsed = true;
+  };
+  const onFocusIn = () => {
+    state.focusCount++;
+  };
+  const onFocusOut = () => {
+    state.blurCount++;
+  };
   const onPointerMove = (e: PointerEvent) => {
     state.pointerMoveCount++;
     if (state.lastPointer) {
@@ -62,8 +68,12 @@ export function createTelemetryCollector(): TelemetryHandle {
     }
     state.lastPointer = { x: e.clientX, y: e.clientY };
   };
-  const onScroll = () => { state.scrollCount++; };
-  const onVisibility = () => { state.visibilityChangeCount++; };
+  const onScroll = () => {
+    state.scrollCount++;
+  };
+  const onVisibility = () => {
+    state.visibilityChangeCount++;
+  };
 
   const attach = (target: HTMLElement | Document): (() => void) => {
     target.addEventListener("keydown", onKeyDown as EventListener, { passive: true });
@@ -86,10 +96,12 @@ export function createTelemetryCollector(): TelemetryHandle {
 
   const snapshot = (): ClientTelemetry => {
     const intervals = state.intervals;
-    const avg = intervals.length === 0 ? 0 : intervals.reduce((a, b) => a + b, 0) / intervals.length;
-    const variance = intervals.length === 0
-      ? 0
-      : intervals.reduce((a, b) => a + (b - avg) ** 2, 0) / intervals.length;
+    const avg =
+      intervals.length === 0 ? 0 : intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const variance =
+      intervals.length === 0
+        ? 0
+        : intervals.reduce((a, b) => a + (b - avg) ** 2, 0) / intervals.length;
     const elapsed = Date.now() - state.startedAt;
     const entropy = computeEntropy(intervals);
     return {

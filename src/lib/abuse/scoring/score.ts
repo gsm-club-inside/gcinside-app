@@ -72,13 +72,19 @@ export function combineScore(b: RiskScoreBreakdown): number {
   const w = abuseConfig.weights;
   let total = 0;
   let totalWeight = 0;
-  total += w.rule * b.ruleScore; totalWeight += w.rule;
-  total += w.behavior * b.behaviorScore; totalWeight += w.behavior;
-  total += w.velocity * b.velocityScore; totalWeight += w.velocity;
-  total += w.reputation * b.reputationScore; totalWeight += w.reputation;
-  total += w.contentSimilarity * b.contentSimilarityScore; totalWeight += w.contentSimilarity;
+  total += w.rule * b.ruleScore;
+  totalWeight += w.rule;
+  total += w.behavior * b.behaviorScore;
+  totalWeight += w.behavior;
+  total += w.velocity * b.velocityScore;
+  totalWeight += w.velocity;
+  total += w.reputation * b.reputationScore;
+  totalWeight += w.reputation;
+  total += w.contentSimilarity * b.contentSimilarityScore;
+  totalWeight += w.contentSimilarity;
   if (b.mlScore !== null && Number.isFinite(b.mlScore)) {
-    total += w.ml * b.mlScore; totalWeight += w.ml;
+    total += w.ml * b.mlScore;
+    totalWeight += w.ml;
   }
   return totalWeight === 0 ? 0 : clamp01(total / totalWeight);
 }

@@ -1,7 +1,14 @@
 import type { RiskDecision } from "../types";
 
 export interface AuditEvent {
-  kind: "risk_decision" | "ai_failure" | "challenge_issued" | "challenge_verified" | "rate_limit_hit" | "block_applied" | "block_lifted";
+  kind:
+    | "risk_decision"
+    | "ai_failure"
+    | "challenge_issued"
+    | "challenge_verified"
+    | "rate_limit_hit"
+    | "block_applied"
+    | "block_lifted";
   at: string;
   payload: Record<string, unknown>;
 }

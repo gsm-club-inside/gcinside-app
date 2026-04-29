@@ -1,6 +1,8 @@
 import type { ClientTelemetry } from "../types";
 
-const g = globalThis as unknown as { abuseTelemetryStore?: Map<string, { telemetry: ClientTelemetry; storedAt: number }> };
+const g = globalThis as unknown as {
+  abuseTelemetryStore?: Map<string, { telemetry: ClientTelemetry; storedAt: number }>;
+};
 const store = g.abuseTelemetryStore ?? new Map();
 if (!g.abuseTelemetryStore) g.abuseTelemetryStore = store;
 
