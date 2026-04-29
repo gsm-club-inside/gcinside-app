@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import localFont from "next/font/local";
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/components/QueryProvider";
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"] });
+const pretendard = localFont({
+  src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  display: "swap",
+  weight: "45 920",
+});
 
 export const metadata: Metadata = {
   title: "GCinside",
@@ -15,11 +20,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className={geist.className}>
+      <body className={`${pretendard.variable} font-sans antialiased`}>
         <QueryProvider>
           <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
             {children}
-            <Toaster richColors position="top-right" />
+            <Toaster position="bottom-center" />
           </ThemeProvider>
         </QueryProvider>
       </body>

@@ -13,7 +13,7 @@ export default async function UserInfoCard({ userId }: { userId: number }) {
   if (!user) return null;
 
   return (
-    <div className="bg-card space-y-4 rounded-xl border p-6">
+    <div className="bg-card space-y-4 rounded-lg border p-6">
       <div className="flex items-center gap-4">
         <div className="bg-primary/10 text-primary flex size-14 items-center justify-center rounded-full text-lg font-semibold">
           {user.name.slice(0, 2)}

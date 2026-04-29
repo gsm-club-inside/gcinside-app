@@ -8,7 +8,7 @@ import ProfileEnrollments from "@/components/profile/ProfileEnrollments";
 
 function UserCardSkeleton() {
   return (
-    <div className="bg-card space-y-4 rounded-xl border p-6">
+    <div className="bg-card space-y-4 rounded-lg border p-6">
       <div className="flex items-center gap-4">
         <Skeleton className="size-14 rounded-full" />
         <div className="space-y-2">
@@ -32,7 +32,7 @@ function EnrollmentsSkeleton() {
   return (
     <ul className="space-y-3">
       {[1, 2].map((i) => (
-        <li key={i} className="bg-card flex items-center justify-between rounded-xl border p-4">
+        <li key={i} className="bg-card flex items-center justify-between rounded-lg border p-4">
           <div className="space-y-1.5">
             <Skeleton className="h-5 w-28" />
             <Skeleton className="h-3 w-48" />
@@ -62,9 +62,14 @@ export default async function ProfilePage() {
   return (
     <>
       <Header initialUser={initialUser} />
-      <main className="mx-auto max-w-4xl space-y-8 px-6 py-8">
+      <main className="mx-auto max-w-4xl space-y-8 px-5 py-6 sm:px-6 sm:py-8">
         <section>
-          <h1 className="mb-4 text-2xl font-bold">My Profile</h1>
+          <div className="mb-4 space-y-1">
+            <h1 className="text-2xl font-bold">내 신청 내역을 확인하세요</h1>
+            <p className="text-muted-foreground text-sm">
+              신청한 동아리와 내 학생 정보를 한곳에서 확인할 수 있어요.
+            </p>
+          </div>
           <Suspense fallback={<UserCardSkeleton />}>
             <UserInfoCard userId={session.userId} />
           </Suspense>

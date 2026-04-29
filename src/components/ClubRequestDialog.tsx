@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { LoaderCircle, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,12 +79,17 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
         return data;
       }),
     onSuccess: () => {
-      toast.success("동아리 생성 요청을 보냈습니다.");
+      toast.success("동아리 생성 요청을 보냈어요", {
+        description: "검토 상태는 생성 요청 창에서 확인할 수 있어요.",
+      });
       setForm(emptyForm);
       setIsDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["club-requests"] });
     },
-    onError: (err: Error) => toast.error("요청 실패", { description: err.message }),
+    onError: (err: Error) =>
+      toast.error("요청을 보내지 못했어요", {
+        description: `${err.message} 입력한 내용을 확인한 뒤 다시 시도해 주세요.`,
+      }),
   });
 
   const handleSubmit = (e: FormEvent) => {
@@ -108,7 +113,13 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
 
   return (
     <>
-      <Button type="button" variant="ghost" size="sm" onClick={handleOpenRequest}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={handleOpenRequest}
+        className="gc-pressable"
+      >
         <Plus data-icon="inline-start" />
         <span className="hidden sm:inline">자율동아리 생성</span>
         <span className="sm:hidden">생성</span>
@@ -117,8 +128,10 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>자율동아리 생성 요청</DialogTitle>
-            <DialogDescription>검토에 필요한 동아리 정보를 입력해주세요.</DialogDescription>
+            <DialogTitle>새 동아리 개설을 요청할까요?</DialogTitle>
+            <DialogDescription>
+              검토에 필요한 정보만 간단히 입력해 주세요. 승인되면 목록에 동아리가 표시됩니다.
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -128,6 +141,7 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
                 <Input
                   id="request-name"
                   required
+                  placeholder="예: 댄스부"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   disabled={!isLoggedIn}
@@ -141,6 +155,7 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
                     type="number"
                     min={0}
                     required
+                    placeholder="1학년"
                     value={form.grade1Capacity}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, grade1Capacity: Number(e.target.value) }))
@@ -152,6 +167,7 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
                     type="number"
                     min={0}
                     required
+                    placeholder="2·3학년"
                     value={form.grade23Capacity}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, grade23Capacity: Number(e.target.value) }))
@@ -169,6 +185,7 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
                 required
                 rows={4}
                 className="resize-none"
+                placeholder="어떤 활동을 언제, 누구와 함께 하는지 적어주세요."
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 disabled={!isLoggedIn}
@@ -184,11 +201,16 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
                     <Skeleton className="h-10 w-full" />
                   </div>
                 ) : latestRequests.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">아직 보낸 생성 요청이 없습니다.</p>
+                  <p className="text-muted-foreground bg-muted/50 rounded-lg px-3 py-3 text-sm">
+                    아직 보낸 생성 요청이 없어요.
+                  </p>
                 ) : (
                   <div className="space-y-2" aria-label="최근 생성 요청">
                     {latestRequests.map((request) => (
-                      <div key={request.id} className="rounded-lg border px-3 py-2 text-sm">
+                      <div
+                        key={request.id}
+                        className="gc-enter rounded-lg border px-3 py-2 text-sm"
+                      >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{request.name}</span>
                           <Badge variant={statusVariant[request.status]}>
@@ -211,11 +233,19 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
             )}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                취소
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+                className="gc-pressable"
+              >
+                돌아가기
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "요청 중..." : "요청하기"}
+              <Button type="submit" disabled={createMutation.isPending} className="gc-pressable">
+                {createMutation.isPending && (
+                  <LoaderCircle className="animate-spin" aria-hidden="true" />
+                )}
+                {createMutation.isPending ? "요청 중" : "요청하기"}
               </Button>
             </DialogFooter>
           </form>

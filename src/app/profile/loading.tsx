@@ -5,10 +5,13 @@ export default function ProfileLoading() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl space-y-8 px-6 py-8">
+      <main className="mx-auto max-w-4xl space-y-8 px-5 py-6 sm:px-6 sm:py-8">
         <section>
-          <h1 className="mb-4 text-2xl font-bold">My Profile</h1>
-          <div className="bg-card space-y-4 rounded-xl border p-6">
+          <div className="mb-4 space-y-2">
+            <Skeleton className="h-7 w-64" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <div className="bg-card space-y-4 rounded-lg border p-6">
             <div className="flex items-center gap-4">
               <Skeleton className="size-14 rounded-full" />
               <div className="space-y-2">
@@ -33,7 +36,7 @@ export default function ProfileLoading() {
             {[1, 2].map((i) => (
               <li
                 key={i}
-                className="bg-card flex items-center justify-between rounded-xl border p-4"
+                className="bg-card flex items-center justify-between rounded-lg border p-4"
               >
                 <div className="space-y-1.5">
                   <Skeleton className="h-5 w-28" />

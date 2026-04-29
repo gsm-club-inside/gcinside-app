@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Pin } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, LoaderCircle, LogIn, Pin, Search } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,14 @@ import { cn } from "@/lib/utils";
 
 const PIN_STORAGE_KEY = "pinned_clubs";
 const MAX_PINS = 3;
+
+const formatOpenAt = (value: string) =>
+  new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
 
 interface Club {
   id: number;
@@ -216,10 +224,14 @@ export default function ClubList({
       if (ctx?.prevClubs) queryClient.setQueryData(["clubs"], ctx.prevClubs);
       if (ctx?.prevEnrolledIds) queryClient.setQueryData(["enrollments"], ctx.prevEnrolledIds);
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
-      toast.error("신청 실패", { description: err.message });
+      toast.error("신청하지 못했어요", {
+        description: `${err.message} 잠시 후 다시 시도해 주세요.`,
+      });
     },
     onSuccess: () => {
-      toast.success("신청 완료!", { description: "동아리 신청이 완료되었습니다." });
+      toast.success("신청이 완료됐어요", {
+        description: "내 프로필에서 신청한 동아리를 확인할 수 있어요.",
+      });
       queryClient.invalidateQueries({ queryKey: ["clubs"] });
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
       telemetry.reset();
@@ -233,7 +245,7 @@ export default function ClubList({
         next = prev.filter((id) => id !== clubId);
       } else {
         if (prev.length >= MAX_PINS) {
-          toast.error(`핀은 최대 ${MAX_PINS}개까지만 가능합니다.`);
+          toast.error(`관심 동아리는 ${MAX_PINS}개까지 고정할 수 있어요.`);
           return prev;
         }
         next = [...prev, clubId];
@@ -253,15 +265,34 @@ export default function ClubList({
 
   if (clubsLoading) {
     return (
-      <div className="grid gap-4">
+      <div className="grid gap-3" aria-label="동아리 목록을 불러오는 중">
         {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="mt-1 h-4 w-64" />
+          <Card key={i} className="bg-card rounded-[22px] border-0 py-0 shadow-none ring-0">
+            <CardHeader className="px-5 pt-4 pb-0 sm:px-6 sm:pt-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+                  <Skeleton className="h-[25.5px] w-36 rounded-lg" />
+                  <Skeleton className="h-[21px] w-full max-w-60 rounded-lg" />
+                  <Skeleton className="h-[21px] w-40 rounded-lg sm:hidden" />
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Skeleton className="size-9 rounded-full" />
+                  <Skeleton className="h-8 w-24 rounded-full" />
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <Skeleton className="h-2 w-full" />
+            <CardContent className="space-y-4 px-5 pt-4 pb-5 sm:px-6 sm:pt-4 sm:pb-6">
+              <div className="space-y-3.5">
+                {[1, 2].map((grade) => (
+                  <div key={grade} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <Skeleton className="h-[18px] w-12 rounded-md" />
+                      <Skeleton className="h-[18px] w-8 rounded-md" />
+                    </div>
+                    <Skeleton className="h-1.5 w-full rounded-full" />
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -271,9 +302,15 @@ export default function ClubList({
 
   if (clubs.length === 0) {
     return (
-      <Card>
-        <CardContent className="text-muted-foreground py-12 text-center">
-          등록된 동아리가 없습니다.
+      <Card className="bg-card rounded-2xl border-0 py-0 shadow-none ring-0">
+        <CardContent className="flex flex-col items-center py-12 text-center">
+          <div className="bg-muted mb-4 flex size-10 items-center justify-center rounded-full">
+            <Search className="text-muted-foreground size-5" aria-hidden="true" />
+          </div>
+          <p className="font-medium">아직 신청할 동아리가 없어요</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            동아리가 등록되면 이곳에서 바로 신청할 수 있어요.
+          </p>
         </CardContent>
       </Card>
     );
@@ -285,7 +322,7 @@ export default function ClubList({
   ];
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       {sortedClubs.map((club) => {
         const isEnrolled = enrolledIds.has(club.id);
         const isNotOpenYet = !!globalOpenAt && now < new Date(globalOpenAt) && !club.isOpen;
@@ -312,21 +349,76 @@ export default function ClubList({
           gradeCount !== null &&
           gradeCount >= gradeCapacity;
         const isGradeNotAllowed = gradeCapacity === 0;
+        const remaining =
+          gradeCapacity !== null && gradeCount !== null
+            ? Math.max(gradeCapacity - gradeCount, 0)
+            : null;
 
         const disabled =
           isNotOpenYet || isEnrolled || isGradeFull || isGradeNotAllowed || isPending;
 
         const buttonLabel = isPending
-          ? "처리중..."
+          ? "신청 중"
+          : !isLoggedIn
+            ? "로그인하고 신청"
+            : isEnrolled
+              ? "신청완료"
+              : isNotOpenYet
+                ? "신청 전"
+                : isGradeNotAllowed
+                  ? "신청불가"
+                  : isGradeFull
+                    ? "마감"
+                    : "신청하기";
+
+        const status = !isLoggedIn
+          ? {
+              icon: LogIn,
+              label: "로그인 필요",
+              tone: "text-muted-foreground",
+              message: "로그인하면 내 학년에 맞춰 신청할 수 있어요.",
+            }
           : isEnrolled
-            ? "신청완료"
+            ? {
+                icon: CheckCircle2,
+                label: "신청 완료",
+                tone: "text-primary",
+                message: "이미 신청한 동아리예요.",
+              }
             : isNotOpenYet
-              ? "신청 전"
+              ? {
+                  icon: Clock3,
+                  label: "신청 대기",
+                  tone: "text-muted-foreground",
+                  message: globalOpenAt
+                    ? `${formatOpenAt(globalOpenAt)}부터 신청할 수 있어요.`
+                    : "아직 신청 시간이 아니에요...",
+                }
               : isGradeNotAllowed
-                ? "신청불가"
+                ? {
+                    icon: AlertCircle,
+                    label: "신청 불가",
+                    tone: "text-muted-foreground",
+                    message: "내 학년은 모집하지 않는 동아리예요.",
+                  }
                 : isGradeFull
-                  ? "마감"
-                  : "신청하기";
+                  ? {
+                      icon: AlertCircle,
+                      label: "마감",
+                      tone: "text-muted-foreground",
+                      message: "내 학년 정원이 모두 찼어요.",
+                    }
+                  : {
+                      icon: CheckCircle2,
+                      label: "신청 가능",
+                      tone: "text-primary",
+                      message:
+                        remaining === null
+                          ? "로그인하면 내 학년에 맞춰 신청할 수 있어요."
+                          : `내 학년 기준 ${remaining}자리 남았어요.`,
+                    };
+
+        const StatusIcon = status.icon;
 
         const grades = [
           {
@@ -344,24 +436,35 @@ export default function ClubList({
         ];
 
         return (
-          <Card key={club.id} className={isPinned ? "border-primary/50" : ""}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2">
+          <Card
+            key={club.id}
+            className={cn(
+              "gc-enter bg-card rounded-[22px] border-0 py-0 shadow-none ring-0 transition-[box-shadow,transform,background-color] duration-200",
+              isPinned &&
+                "dark:bg-secondary/20 dark:ring-secondary bg-[#f7fbff] ring-2 ring-[#c9e2ff]"
+            )}
+          >
+            <CardHeader className="px-5 pt-4 pb-0 sm:px-6 sm:pt-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+                  <CardTitle className="flex flex-wrap items-center gap-2 text-[17px] leading-[25.5px] font-bold">
                     {club.name}
                     {isNotOpenYet && <Badge variant="outline">신청 전</Badge>}
                     {isEnrolled && <Badge>신청완료</Badge>}
                   </CardTitle>
-                  <CardDescription>{club.description}</CardDescription>
+                  <CardDescription className="text-[14px] leading-[21px]">
+                    {club.description}
+                  </CardDescription>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => togglePin(club.id)}
                     className={cn(
-                      "rounded-md p-1.5 transition-colors",
-                      isPinned ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                      "gc-pressable flex size-9 items-center justify-center rounded-full transition-colors",
+                      isPinned
+                        ? "text-primary dark:bg-secondary bg-[#e8f3ff]"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                     title={isPinned ? "핀 해제" : "상단 고정"}
                     aria-label={isPinned ? `${club.name} 상단 고정 해제` : `${club.name} 상단 고정`}
@@ -373,36 +476,63 @@ export default function ClubList({
                     variant={isEnrolled ? "secondary" : disabled ? "outline" : "default"}
                     disabled={disabled}
                     onClick={() => handleEnroll(club.id)}
+                    className="gc-pressable min-w-[96px] rounded-full px-3.5"
                   >
+                    {isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
                     {buttonLabel}
                   </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+            <CardContent className="space-y-4 px-5 pt-4 pb-5 sm:px-6 sm:pt-4 sm:pb-6">
+              {isLoggedIn && (
+                <div className="dark:bg-muted flex items-start gap-2 rounded-2xl bg-[#f9fafb] px-4 py-3">
+                  <StatusIcon
+                    className={cn("mt-0.5 size-4 shrink-0", status.tone)}
+                    aria-hidden="true"
+                  />
+                  <p className="text-[14px] leading-[21px]">{status.message}</p>
+                </div>
+              )}
+
+              <div className="space-y-3.5">
                 {grades.map(({ label, count, capacity, isMyGrade }) => {
                   if (capacity === 0) return null;
-                  const pct = Math.round((count / capacity) * 100);
+                  const pct = Math.min(Math.round((count / capacity) * 100), 100);
+                  const isDisabledGrade = isLoggedIn && !isMyGrade;
                   return (
-                    <div key={label} className="flex items-center gap-3">
-                      <span
-                        className={cn(
-                          "w-12 shrink-0 text-xs",
-                          isMyGrade ? "text-foreground font-semibold" : "text-muted-foreground"
+                    <div key={label} className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <span
+                          className={cn(
+                            "text-[12px] leading-[18px]",
+                            isMyGrade
+                              ? "text-foreground font-semibold"
+                              : "text-muted-foreground font-medium"
+                          )}
+                        >
+                          {label}
+                          {isMyGrade && <span className="ml-1 text-[11px]">(내 학년)</span>}
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 text-[12px] leading-[18px] tabular-nums",
+                            isMyGrade ? "text-foreground font-semibold" : "text-muted-foreground"
+                          )}
+                        >
+                          {count} / {capacity}
+                        </span>
+                      </div>
+                      <Progress
+                        value={pct}
+                        className="h-1.5"
+                        trackClassName="h-1.5 bg-[#f2f4f6] dark:bg-muted"
+                        indicatorClassName={cn(
+                          "bg-[#4593fc] dark:bg-primary",
+                          isDisabledGrade && "bg-[#d1d6db] dark:bg-[#4e5968]"
                         )}
-                      >
-                        {label}
-                      </span>
-                      <Progress value={pct} className="h-1.5 flex-1" />
-                      <span
-                        className={cn(
-                          "shrink-0 text-xs tabular-nums",
-                          isMyGrade ? "text-foreground font-semibold" : "text-muted-foreground"
-                        )}
-                      >
-                        {count} / {capacity}
-                      </span>
+                        aria-label={`${label} 신청 현황`}
+                      />
                     </div>
                   );
                 })}

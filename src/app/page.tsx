@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import ClubList from "@/components/ClubList";
 import ErrorToast from "@/components/ErrorToast";
+import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { getCachedClubs, getCachedSettings } from "@/lib/queries";
 
@@ -30,11 +31,38 @@ export default async function HomePage({
     <>
       <Header initialUser={initialUser} />
       <ErrorToast error={error} />
-      <main className="mx-auto max-w-4xl px-6 py-8">
-        <h1 className="mb-1 text-2xl font-bold">창체동아리 목록</h1>
-        <p className="text-muted-foreground mb-6 text-sm">
-          원하는 창체동아리를 선택해 선착순으로 신청하세요.
-        </p>
+      <main className="mx-auto max-w-4xl px-5 py-6 sm:px-6 sm:py-8">
+        <section className="mb-6 space-y-3">
+          <div className="space-y-2">
+            <h1 className="text-2xl leading-tight font-bold sm:text-3xl">
+              지금 신청할 동아리를 선택하세요
+            </h1>
+            <p className="text-muted-foreground max-w-2xl text-sm leading-6">
+              {session.userId ? (
+                <>
+                  신청한 동아리는{" "}
+                  <Link
+                    href="/profile"
+                    className="text-primary font-semibold underline underline-offset-4"
+                  >
+                    프로필
+                  </Link>
+                  에서 언제든 확인할 수 있어요.
+                </>
+              ) : (
+                <>
+                  <a
+                    href="/api/auth/login"
+                    className="text-primary font-semibold underline underline-offset-4"
+                  >
+                    로그인
+                  </a>
+                  하면 내 학년 기준으로 정원이 계산돼요.
+                </>
+              )}
+            </p>
+          </div>
+        </section>
         <ClubList
           isLoggedIn={!!session.userId}
           initialUserGrade={session.grade ?? null}
