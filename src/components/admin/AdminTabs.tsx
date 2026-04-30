@@ -8,6 +8,7 @@ import AdminClubRequests from "@/components/admin/AdminClubRequests";
 import AdminClubs from "@/components/admin/AdminClubs";
 import AdminEnrollments from "@/components/admin/AdminEnrollments";
 import AdminSettings from "@/components/admin/AdminSettings";
+import AdminAbuseLogs from "@/components/admin/AdminAbuseLogs";
 
 const TABS = [
   {
@@ -29,6 +30,11 @@ const TABS = [
     value: "settings",
     label: "운영 설정",
     description: "신청 오픈 시간, 학생 정보 갱신, 매크로 방지 설정을 관리해요.",
+  },
+  {
+    value: "abuse",
+    label: "어뷰징",
+    description: "탐지된 어뷰징과 처리 로그를 확인해요.",
   },
 ] as const;
 
@@ -111,6 +117,9 @@ export default function AdminTabs() {
       </TabsContent>
       <TabsContent value="settings">
         <AdminSettings />
+      </TabsContent>
+      <TabsContent value="abuse">
+        <AdminAbuseLogs />
       </TabsContent>
     </Tabs>
   );

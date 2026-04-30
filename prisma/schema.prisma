@@ -146,6 +146,21 @@ model RiskDecisionRecord {
   @@index([action, createdAt])
 }
 
+model AbuseAdminLog {
+  id          BigInt   @id @default(autoincrement())
+  requestId   String
+  adminUserId Int?
+  adminName   String?
+  adminEmail  String?
+  action      String
+  note        String
+  createdAt   DateTime @default(now())
+
+  @@index([requestId, createdAt])
+  @@index([adminUserId, createdAt])
+  @@index([action, createdAt])
+}
+
 model SessionFingerprint {
   id         BigInt   @id @default(autoincrement())
   sessionId  String
