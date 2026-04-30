@@ -1,35 +1,19 @@
 import Header from "@/components/Header";
-import AdminClubRequests from "@/components/admin/AdminClubRequests";
-import AdminClubs from "@/components/admin/AdminClubs";
-import AdminEnrollments from "@/components/admin/AdminEnrollments";
-import AdminSettings from "@/components/admin/AdminSettings";
-import { Separator } from "@/components/ui/separator";
+import AdminTabs from "@/components/admin/AdminTabs";
 
 export default function AdminPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-6 py-8">
-        <h1 className="mb-8 text-2xl font-bold">Admin page</h1>
-        <div className="space-y-10">
-          <section>
-            <h2 className="mb-4 text-lg font-semibold">전체 설정</h2>
-            <AdminSettings />
-          </section>
-          <Separator />
-          <section>
-            <AdminClubRequests />
-          </section>
-          <Separator />
-          <section>
-            <h2 className="mb-4 text-lg font-semibold">동아리 관리</h2>
-            <AdminClubs />
-          </section>
-          <Separator />
-          <section>
-            <h2 className="mb-4 text-lg font-semibold">신청 현황</h2>
-            <AdminEnrollments />
-          </section>
+      <main className="bg-muted min-h-[calc(100vh-3.5rem)]">
+        <div className="mx-auto max-w-4xl px-6 py-10 sm:py-12">
+          <header className="mb-8 space-y-1.5">
+            <h1 className="text-[26px] leading-tight font-bold tracking-tight">Admin page</h1>
+            <p className="text-muted-foreground text-[15px]">
+              동아리 운영에 필요한 모든 작업을 한 곳에서 처리할 수 있어요.
+            </p>
+          </header>
+          <AdminTabs />
         </div>
       </main>
     </>

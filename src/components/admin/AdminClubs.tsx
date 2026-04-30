@@ -316,7 +316,7 @@ export default function AdminClubs() {
               </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={saveMutation.isPending}>
-                  {saveMutation.isPending ? "저장 중..." : "저장"}
+                  {saveMutation.isPending ? "저장 중 이에요..." : "저장하기"}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   취소

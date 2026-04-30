@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -82,11 +82,6 @@ export default function AdminClubRequests() {
     staleTime: 15_000,
   });
 
-  const pendingCount = useMemo(
-    () => requests.filter((request) => request.status === "PENDING").length,
-    [requests]
-  );
-
   const reviewMutation = useMutation({
     mutationFn: ({
       requestId,
@@ -119,10 +114,6 @@ export default function AdminClubRequests() {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">동아리 생성 요청</h2>
-        <Badge variant={pendingCount > 0 ? "default" : "secondary"}>{pendingCount}건 대기</Badge>
-      </div>
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
