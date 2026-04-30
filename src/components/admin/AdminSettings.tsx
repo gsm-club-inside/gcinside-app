@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -45,7 +45,7 @@ function SettingsForm({ initialOpenAt }: { initialOpenAt: string }) {
   });
 
   return (
-    <div className="flex items-end gap-3">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <div className="flex-1 space-y-1.5">
         <Label htmlFor="globalOpenAt" className="text-muted-foreground text-xs font-normal">
           KST 기준 · 미설정 시 즉시 오픈 · 동아리별 신청 활성화가 켜져 있으면 무시됨
@@ -57,12 +57,17 @@ function SettingsForm({ initialOpenAt }: { initialOpenAt: string }) {
           onChange={(e) => setOpenAt(e.target.value)}
         />
       </div>
-      <Button onClick={() => mutation.mutate(kstInputToUtc(openAt))} disabled={mutation.isPending}>
-        {mutation.isPending ? "저장 중..." : "저장"}
+      <Button
+        className="rounded-full"
+        onClick={() => mutation.mutate(kstInputToUtc(openAt))}
+        disabled={mutation.isPending}
+      >
+        {mutation.isPending ? "저장 중..." : "저장하기"}
       </Button>
       {openAt && (
         <Button
           variant="outline"
+          className="rounded-full"
           onClick={() => {
             setOpenAt("");
             mutation.mutate(null);
@@ -122,11 +127,16 @@ function RefreshUsersButton() {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3">
-        <Button variant="outline" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-          {mutation.isPending ? "갱신 중..." : "학번/학년 일괄 갱신"}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Button
+          variant="outline"
+          className="w-fit rounded-full"
+          onClick={() => mutation.mutate()}
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? "갱신 중..." : "학생 정보 갱신하기"}
         </Button>
-        <span className="text-muted-foreground text-xs">
+        <span className="text-muted-foreground text-sm leading-5">
           DataGSM OAuth로 모든 학생의 학번·학년을 최신 정보로 갱신합니다
           {mutation.isSuccess && (
             <>
@@ -280,7 +290,7 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
               setForm((prev) => ({ ...prev, aiMode: value as AbuseAiMode }))
             }
           >
-            <SelectTrigger id="abuseAiMode">
+            <SelectTrigger id="abuseAiMode" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -317,7 +327,7 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
               setForm((prev) => ({ ...prev, activeModel: value ?? prev.activeModel }))
             }
           >
-            <SelectTrigger id="abuseActiveModel">
+            <SelectTrigger id="abuseActiveModel" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -343,7 +353,7 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
               }))
             }
           >
-            <SelectTrigger id="abuseCandidateModel">
+            <SelectTrigger id="abuseCandidateModel" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -362,8 +372,8 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
         </div>
       </div>
 
-      <div className="rounded-lg border p-3">
-        <Label className="mb-2 block">모델 등록</Label>
+      <div className="bg-muted/60 dark:bg-muted/30 rounded-2xl p-4">
+        <Label className="mb-2 block">후보 모델 등록</Label>
         <div className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_auto]">
           <Input
             aria-label="모델 버전"
@@ -385,6 +395,7 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
           />
           <Button
             variant="outline"
+            className="rounded-full"
             disabled={!newModel.version.trim() || registerMutation.isPending}
             onClick={() => registerMutation.mutate()}
           >
@@ -393,7 +404,7 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
           <Checkbox
             id="abuseLearningEnabled"
@@ -406,16 +417,21 @@ function AbuseModelSettingsForm({ settings }: { settings: AbuseModelSettings }) 
             학습 데이터 수집
           </Label>
         </div>
-        <div className="ml-auto flex gap-2">
+        <div className="flex gap-2 sm:ml-auto">
           <Button
             variant="outline"
+            className="rounded-full"
             disabled={!form.candidateModel.trim() || promoteMutation.isPending}
             onClick={() => promoteMutation.mutate()}
           >
             {promoteMutation.isPending ? "적용 중..." : "후보 모델 적용"}
           </Button>
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? "저장 중..." : "저장"}
+          <Button
+            className="rounded-full"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? "저장 중..." : "저장하기"}
           </Button>
         </div>
       </div>
@@ -432,9 +448,10 @@ export default function AdminSettings() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="ring-border/60 rounded-[22px] border-0 py-0 shadow-none ring-1">
         <CardHeader>
-          <CardTitle className="text-base">신청 오픈 시간</CardTitle>
+          <CardTitle className="text-[17px] font-bold">신청 오픈 시간</CardTitle>
+          <CardDescription>전체 신청 시작 시간을 KST 기준으로 관리합니다.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (
@@ -448,18 +465,22 @@ export default function AdminSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="ring-border/60 rounded-[22px] border-0 py-0 shadow-none ring-1">
         <CardHeader>
-          <CardTitle className="text-base">학생 정보 갱신</CardTitle>
+          <CardTitle className="text-[17px] font-bold">학생 정보 갱신</CardTitle>
+          <CardDescription>로그인한 학생의 최신 학년과 학번을 다시 불러옵니다.</CardDescription>
         </CardHeader>
         <CardContent>
           <RefreshUsersButton />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="ring-border/60 rounded-[22px] border-0 py-0 shadow-none ring-1">
         <CardHeader>
-          <CardTitle className="text-base">AI 매크로 방지</CardTitle>
+          <CardTitle className="text-[17px] font-bold">AI 매크로 방지</CardTitle>
+          <CardDescription>
+            새 모델은 카나리로 일부 요청에만 적용한 뒤 안전하면 활성 모델로 바꿀 수 있어요.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading || !settings ? (

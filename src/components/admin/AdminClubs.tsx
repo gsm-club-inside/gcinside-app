@@ -118,7 +118,7 @@ function AddUserDialog({ club, onClose }: { club: Club; onClose: () => void }) {
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
           />
-          <div className="max-h-64 overflow-y-auto rounded-md border">
+          <div className="border-border/70 max-h-64 overflow-y-auto rounded-2xl border">
             {filteredUsers.length === 0 ? (
               <p className="text-muted-foreground py-6 text-center text-sm">
                 {allUsers.length === 0 ? "불러오는 중..." : "해당하는 학생이 없습니다."}
@@ -128,8 +128,8 @@ function AddUserDialog({ club, onClose }: { club: Club; onClose: () => void }) {
                 <button
                   key={user.id}
                   type="button"
-                  className={`hover:bg-accent flex w-full items-center justify-between px-3 py-2 text-sm transition-colors ${
-                    selectedUserId === user.id ? "bg-accent" : ""
+                  className={`hover:bg-muted flex w-full items-center justify-between gap-3 px-4 py-3 text-sm transition-colors ${
+                    selectedUserId === user.id ? "bg-muted" : ""
                   }`}
                   onClick={() => setSelectedUserId(user.id)}
                 >
@@ -173,6 +173,8 @@ export default function AdminClubs() {
     queryFn: () => fetch("/api/clubs").then((r) => r.json()),
     staleTime: 30_000,
   });
+
+  const openCount = useMemo(() => clubs.filter((club) => club.isOpen).length, [clubs]);
 
   const saveMutation = useMutation({
     mutationFn: (payload: typeof emptyForm) => {
@@ -228,9 +230,9 @@ export default function AdminClubs() {
   return (
     <div className="space-y-6">
       {editId !== null && (
-        <Card>
+        <Card className="ring-border/60 rounded-[22px] border-0 py-0 shadow-none ring-1">
           <CardHeader>
-            <CardTitle className="text-base">동아리 수정</CardTitle>
+            <CardTitle className="text-[17px] font-bold">동아리 정보를 수정하세요</CardTitle>
           </CardHeader>
           <CardContent>
             <form
@@ -327,7 +329,13 @@ export default function AdminClubs() {
         </Card>
       )}
 
-      <Card>
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="secondary">전체 {clubs.length}개</Badge>
+        <Badge variant={openCount > 0 ? "default" : "secondary"}>활성 {openCount}개</Badge>
+        <Badge variant="secondary">대기 {Math.max(clubs.length - openCount, 0)}개</Badge>
+      </div>
+
+      <Card className="ring-border/60 rounded-[22px] border-0 py-0 shadow-none ring-1">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="space-y-3 p-6">
@@ -385,8 +393,11 @@ export default function AdminClubs() {
                 ))}
                 {clubs.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
-                      등록된 창체동아리가 없습니다.
+                    <TableCell colSpan={5} className="py-12 text-center">
+                      <p className="font-medium">등록된 창체동아리가 없어요</p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        동아리가 등록되면 정원과 신청 상태를 관리할 수 있습니다.
+                      </p>
                     </TableCell>
                   </TableRow>
                 )}

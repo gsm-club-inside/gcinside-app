@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +82,15 @@ export default function AdminClubRequests() {
     staleTime: 15_000,
   });
 
+  const counts = useMemo(
+    () => ({
+      pending: requests.filter((request) => request.status === "PENDING").length,
+      approved: requests.filter((request) => request.status === "APPROVED").length,
+      rejected: requests.filter((request) => request.status === "REJECTED").length,
+    }),
+    [requests]
+  );
+
   const reviewMutation = useMutation({
     mutationFn: ({
       requestId,
@@ -113,8 +122,16 @@ export default function AdminClubRequests() {
   });
 
   return (
-    <>
-      <Card>
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Badge variant={counts.pending > 0 ? "default" : "secondary"}>
+          대기 {counts.pending}건
+        </Badge>
+        <Badge variant="secondary">승인 {counts.approved}건</Badge>
+        <Badge variant="secondary">거절 {counts.rejected}건</Badge>
+      </div>
+
+      <Card className="ring-border/60 rounded-[22px] border-0 py-0 shadow-none ring-1">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="space-y-3 p-6">
@@ -192,8 +209,11 @@ export default function AdminClubRequests() {
                 ))}
                 {requests.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
-                      접수된 동아리 생성 요청이 없습니다.
+                    <TableCell colSpan={5} className="py-12 text-center">
+                      <p className="font-medium">검토할 생성 요청이 없어요</p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        학생이 자율동아리 생성을 요청하면 이곳에 표시됩니다.
+                      </p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -253,6 +273,6 @@ export default function AdminClubRequests() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }

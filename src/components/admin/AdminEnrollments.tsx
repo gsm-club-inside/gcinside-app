@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -130,7 +131,7 @@ export default function AdminEnrollments() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Select
           value={selectedClub || "all"}
           onValueChange={(v) => setSelectedClub(v === "all" ? "" : (v ?? ""))}
@@ -147,15 +148,24 @@ export default function AdminEnrollments() {
             ))}
           </SelectContent>
         </Select>
-        <span className="text-muted-foreground text-sm">{enrollments.length}명</span>
-        <div className="ml-auto">
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+        <span className="bg-muted text-muted-foreground inline-flex h-8 w-fit items-center rounded-full px-3 text-sm font-medium tabular-nums">
+          {enrollments.length}명
+        </span>
+        <div className="sm:ml-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting}
+            className="rounded-full"
+          >
+            <Download aria-hidden="true" />
             {isExporting ? "내보내는 중..." : "엑셀 내보내기"}
           </Button>
         </div>
       </div>
 
-      <Card>
+      <Card className="ring-border/60 rounded-[22px] border-0 py-0 shadow-none ring-1">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="space-y-3 p-6">
@@ -200,8 +210,11 @@ export default function AdminEnrollments() {
                   ))}
                   {enrollments.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
-                        신청 내역이 없습니다.
+                      <TableCell colSpan={5} className="py-12 text-center">
+                        <p className="font-medium">아직 신청 내역이 없어요</p>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                          학생이 동아리를 신청하면 이곳에 표시됩니다.
+                        </p>
                       </TableCell>
                     </TableRow>
                   )}

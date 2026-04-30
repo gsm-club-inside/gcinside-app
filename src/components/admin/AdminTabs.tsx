@@ -67,12 +67,12 @@ export default function AdminTabs() {
     router.replace(qs ? `/admin?${qs}` : "/admin", { scroll: false });
   };
 
-  const activeDescription = TABS.find((t) => t.value === value)?.description;
+  const activeTab = TABS.find((t) => t.value === value);
 
   return (
     <Tabs value={value} onValueChange={(v) => handleChange(v as TabValue)}>
-      <div className="-mx-6 overflow-x-auto sm:mx-0 sm:overflow-visible">
-        <TabsList className="px-6 sm:px-0">
+      <div className="-mx-5 overflow-x-auto sm:mx-0 sm:overflow-visible">
+        <TabsList className="px-5 sm:px-0">
           <TabsIndicator />
           {TABS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
@@ -90,13 +90,14 @@ export default function AdminTabs() {
         </TabsList>
       </div>
 
-      {activeDescription && (
-        <p
+      {activeTab && (
+        <div
           key={value}
-          className="text-muted-foreground animate-in fade-in-0 -mt-3 text-[14px] duration-150 motion-reduce:animate-none"
+          className="animate-in fade-in-0 -mt-2 space-y-1 duration-150 motion-reduce:animate-none"
         >
-          {activeDescription}
-        </p>
+          <h2 className="text-[18px] leading-7 font-bold">{activeTab.label}</h2>
+          <p className="text-muted-foreground text-[14px] leading-5">{activeTab.description}</p>
+        </div>
       )}
 
       <TabsContent value="enrollments">

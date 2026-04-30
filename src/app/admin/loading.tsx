@@ -6,10 +6,10 @@ export default function AdminLoading() {
   return (
     <>
       <Header />
-      <main className="bg-muted min-h-[calc(100vh-3.5rem)]">
-        <div className="mx-auto max-w-4xl px-6 py-10 sm:py-12">
-          <header className="mb-8 space-y-2">
-            <Skeleton className="h-7 w-24" />
+      <main className="bg-background min-h-[calc(100vh-3.5rem)]">
+        <div className="mx-auto max-w-4xl px-5 py-6 sm:px-6 sm:py-8">
+          <header className="mb-6 space-y-2">
+            <Skeleton className="h-8 w-28" />
             <Skeleton className="h-4 w-72" />
           </header>
 
@@ -24,7 +24,7 @@ export default function AdminLoading() {
               <Skeleton className="h-9 w-48" />
               <Skeleton className="ml-auto h-8 w-24" />
             </div>
-            <Card>
+            <Card className="ring-border/60 rounded-[22px] border-0 py-0 shadow-none ring-1">
               <CardContent className="space-y-3 p-6">
                 {[1, 2, 3, 4].map((i) => (
                   <Skeleton key={i} className="h-10 w-full" />
