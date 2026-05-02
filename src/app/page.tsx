@@ -36,31 +36,32 @@ export default async function HomePage({
         <section className="mb-6 space-y-2">
           <EnrollmentHeading
             openAt={settings.openAt ? new Date(settings.openAt).toISOString() : null}
-          />
-          <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            {session.userId ? (
-              <>
-                신청한 동아리는{" "}
-                <Link
-                  href="/profile"
-                  className="text-primary font-semibold underline underline-offset-4"
-                >
-                  프로필
-                </Link>
-                에서 언제든 확인할 수 있어요.
-              </>
-            ) : (
-              <>
-                <a
-                  href="/api/auth/login"
-                  className="text-primary font-semibold underline underline-offset-4"
-                >
-                  로그인
-                </a>
-                하면 내 학년 기준으로 정원이 계산돼요.
-              </>
-            )}
-          </p>
+          >
+            <p className="text-muted-foreground max-w-2xl text-sm leading-6">
+              {session.userId ? (
+                <>
+                  신청한 동아리는{" "}
+                  <Link
+                    href="/profile"
+                    className="text-primary font-semibold underline underline-offset-4"
+                  >
+                    프로필
+                  </Link>
+                  에서 언제든 확인할 수 있어요.
+                </>
+              ) : (
+                <>
+                  <a
+                    href="/api/auth/login"
+                    className="text-primary font-semibold underline underline-offset-4"
+                  >
+                    로그인
+                  </a>
+                  하면 내 학년 기준으로 정원이 계산돼요.
+                </>
+              )}
+            </p>
+          </EnrollmentHeading>
         </section>
         <ClubList
           isLoggedIn={!!session.userId}

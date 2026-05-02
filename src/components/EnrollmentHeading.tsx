@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -15,7 +16,13 @@ const FORMATTER = new Intl.DateTimeFormat("ko-KR", {
 
 const HEADING_CLASS = "text-2xl leading-tight font-bold sm:text-3xl";
 
-export default function EnrollmentHeading({ openAt }: { openAt: string | null }) {
+export default function EnrollmentHeading({
+  openAt,
+  children,
+}: {
+  openAt: string | null;
+  children?: ReactNode;
+}) {
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -32,9 +39,15 @@ export default function EnrollmentHeading({ openAt }: { openAt: string | null })
   const target = openAt ? new Date(openAt).getTime() : null;
   const diff = target !== null && now !== null ? target - now : -1;
   const showCountdown = target !== null && now !== null && diff > 0;
+  const isUpcoming = target !== null && (now === null || target > now);
 
   if (!showCountdown) {
-    return <h1 className={HEADING_CLASS}>지금 신청할 동아리를 선택하세요</h1>;
+    return (
+      <>
+        <h1 className={HEADING_CLASS}>지금 신청할 동아리를 선택하세요</h1>
+        {!isUpcoming && children}
+      </>
+    );
   }
 
   const totalSec = Math.floor(diff / 1000);
