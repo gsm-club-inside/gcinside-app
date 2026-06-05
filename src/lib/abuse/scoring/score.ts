@@ -95,11 +95,15 @@ function applyAutomationFloors(ctx: RiskContext, signals: RiskSignal[], score: n
   const hasNoTelemetry = reasonCodes.has("telemetry_absent") || reasonCodes.has("telemetry_empty");
   const hasVeryFastSubmit = reasonCodes.has("submit_under_300ms");
   const hasFastSubmit = hasVeryFastSubmit || reasonCodes.has("submit_under_800ms");
+  const hasOpenWindowSingleActivation = reasonCodes.has("single_activation_open_window");
+  const hasClickOnlySubmit = reasonCodes.has("click_only_submit");
   const noInteraction =
     (ctx.telemetry?.keydownCount ?? 0) === 0 && (ctx.telemetry?.pointerMoveCount ?? 0) === 0;
 
   if (hasAutomationUa && hasNoTelemetry) return Math.max(score, 0.9);
   if (ctx.action === "vote" && hasVeryFastSubmit && noInteraction) return Math.max(score, 0.9);
+  if (ctx.action === "vote" && hasOpenWindowSingleActivation) return Math.max(score, 0.9);
+  if (ctx.action === "vote" && hasClickOnlySubmit) return Math.max(score, 0.7);
   if (ctx.action === "vote" && hasFastSubmit && hasNoTelemetry) return Math.max(score, 0.8);
 
   return score;

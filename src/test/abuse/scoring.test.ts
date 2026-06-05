@@ -73,6 +73,33 @@ describe("scoring", () => {
     expect(d.level).toBe("RATE_LIMIT");
   });
 
+  it("promotes open-window single-click enrollment to an enforced level", () => {
+    const signals: RiskSignal[] = [
+      {
+        ruleId: "single_activation_submit",
+        reason: { code: "single_activation_open_window", weight: 1.0 },
+      },
+    ];
+    const d = buildDecision({
+      ctx: {
+        ...ctx,
+        action: "vote",
+        telemetry: {
+          submitElapsedMs: 10_000,
+          keydownCount: 0,
+          pointerMoveCount: 0,
+          pointerDownCount: 1,
+        },
+        metadata: { enrollmentOpenAgeMs: 500 },
+      },
+      signals,
+      mlScore: null,
+    });
+
+    expect(d.score).toBeGreaterThanOrEqual(0.9);
+    expect(d.level).toBe("RATE_LIMIT");
+  });
+
   it("promotes automation user-agents without telemetry", () => {
     const signals: RiskSignal[] = [
       { ruleId: "automation_user_agent", reason: { code: "ua_match_curl", weight: 1.0 } },

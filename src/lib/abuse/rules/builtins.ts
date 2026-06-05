@@ -84,8 +84,46 @@ export const noTelemetrySubmitRule: AbuseRule = {
     if (!t) return [signal(this.id, "telemetry_absent", 0.5)];
     const keys = t.keydownCount ?? 0;
     const moves = t.pointerMoveCount ?? 0;
-    if (keys === 0 && moves === 0) return [signal(this.id, "telemetry_empty", 0.7)];
+    const downs = t.pointerDownCount ?? 0;
+    const clicks = t.clickCount ?? 0;
+    if (keys === 0 && moves === 0 && downs === 0 && clicks === 0) {
+      return [signal(this.id, "telemetry_empty", 0.7)];
+    }
     return [];
+  },
+};
+
+export const singleActivationSubmitRule: AbuseRule = {
+  id: "single_activation_submit",
+  name: "Submit after only one activation event",
+  enabled: true,
+  weight: 0.2,
+  evaluate(ctx) {
+    if (ctx.action !== "vote") return [];
+    const t = ctx.telemetry;
+    if (!t) return [];
+
+    const keys = t.keydownCount ?? 0;
+    const moves = t.pointerMoveCount ?? 0;
+    const downs = t.pointerDownCount ?? 0;
+    const clicks = t.clickCount ?? 0;
+    const scrolls = t.scrollCount ?? 0;
+    const focus = t.focusCount ?? 0;
+    const onlySubmitActivation =
+      keys === 0 && moves === 0 && scrolls === 0 && focus <= 1 && downs <= 1 && clicks <= 1;
+
+    if (!onlySubmitActivation) return [];
+
+    const openAge =
+      typeof ctx.metadata?.enrollmentOpenAgeMs === "number"
+        ? ctx.metadata.enrollmentOpenAgeMs
+        : null;
+    const detail = `keys=${keys}, moves=${moves}, downs=${downs}, clicks=${clicks}, openAge=${openAge ?? "n/a"}ms`;
+    if (openAge !== null && openAge >= -1_000 && openAge <= 15_000) {
+      return [signal(this.id, "single_activation_open_window", 1.0, detail)];
+    }
+
+    return [signal(this.id, "click_only_submit", 0.65, detail)];
   },
 };
 
@@ -148,6 +186,7 @@ export const builtinRules: AbuseRule[] = [
   tooFastSubmitRule,
   pasteOnlyRule,
   noTelemetrySubmitRule,
+  singleActivationSubmitRule,
   duplicateContentRule,
   automationUaRule,
   voteRepetitionRule,

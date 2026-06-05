@@ -89,7 +89,10 @@ export async function POST(req: NextRequest) {
       sessionId: session.email ?? null,
       accountAgeMinutes,
       telemetry,
-      metadata: { clubId },
+      metadata: {
+        clubId,
+        enrollmentOpenAgeMs: settings.openAt ? Date.now() - settings.openAt.getTime() : null,
+      },
     });
     if (!challengeVerified) {
       const risk = await checkAbuseRisk(riskCtx, {

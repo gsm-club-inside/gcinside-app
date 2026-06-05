@@ -41,6 +41,38 @@ describe("rule engine", () => {
     expect(sigs.some((s) => s.reason.code.startsWith("ua_match_"))).toBe(true);
   });
 
+  it("flags single-click enrollment at the open window", async () => {
+    const sigs = await defaultRuleEngine.evaluate({
+      ...baseCtx,
+      action: "vote",
+      telemetry: {
+        keydownCount: 0,
+        pointerMoveCount: 0,
+        pointerDownCount: 1,
+        clickCount: 0,
+        submitElapsedMs: 10_000,
+      },
+      metadata: { enrollmentOpenAgeMs: 500 },
+    });
+    expect(sigs.find((s) => s.reason.code === "single_activation_open_window")).toBeDefined();
+  });
+
+  it("does not flag human-like enrollment movement as single activation", async () => {
+    const sigs = await defaultRuleEngine.evaluate({
+      ...baseCtx,
+      action: "vote",
+      telemetry: {
+        keydownCount: 0,
+        pointerMoveCount: 4,
+        pointerDownCount: 1,
+        clickCount: 0,
+        submitElapsedMs: 10_000,
+      },
+      metadata: { enrollmentOpenAgeMs: 500 },
+    });
+    expect(sigs.find((s) => s.ruleId === "single_activation_submit")).toBeUndefined();
+  });
+
   it("flags new accounts producing volume", async () => {
     const sigs = await defaultRuleEngine.evaluate({
       ...baseCtx,
