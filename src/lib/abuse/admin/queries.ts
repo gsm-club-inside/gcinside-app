@@ -21,6 +21,8 @@ export interface AbuseDecisionRecordView {
   id: string;
   requestId: string;
   userId: number | null;
+  userEmail: string | null;
+  userName: string | null;
   sessionId: string | null;
   ipHash: string | null;
   deviceHash: string | null;
@@ -75,11 +77,21 @@ export async function listDetectedAbuseRecords(limit = 50): Promise<AbuseDecisio
     const view = toAdminLogView(log);
     logsByRequestId.set(log.requestId, [...(logsByRequestId.get(log.requestId) ?? []), view]);
   }
+  const userIds = [...new Set(records.map((record) => record.userId).filter((id) => id !== null))];
+  const users = userIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, email: true, name: true },
+      })
+    : [];
+  const usersById = new Map(users.map((user) => [user.id, user]));
 
   return records.map((record) => ({
     id: record.id.toString(),
     requestId: record.requestId,
     userId: record.userId,
+    userEmail: record.userId ? (usersById.get(record.userId)?.email ?? null) : null,
+    userName: record.userId ? (usersById.get(record.userId)?.name ?? null) : null,
     sessionId: record.sessionId,
     ipHash: record.ipHash,
     deviceHash: record.deviceHash,

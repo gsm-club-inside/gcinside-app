@@ -9,6 +9,9 @@ const prismaMock = vi.hoisted(() => ({
     findMany: vi.fn(),
     create: vi.fn(),
   },
+  user: {
+    findMany: vi.fn(),
+  },
 }));
 
 vi.mock("@/lib/prisma", () => ({ prisma: prismaMock }));
@@ -132,6 +135,9 @@ describe("admin/queries", () => {
         createdAt: new Date("2026-04-30T00:01:00Z"),
       },
     ]);
+    prismaMock.user.findMany.mockResolvedValue([
+      { id: 7, email: "student@example.com", name: "학생" },
+    ]);
 
     const rows = await listDetectedAbuseRecords(20);
 
@@ -140,7 +146,16 @@ describe("admin/queries", () => {
       orderBy: { createdAt: "desc" },
       take: 20,
     });
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith({
+      where: { id: { in: [7] } },
+      select: { id: true, email: true, name: true },
+    });
     expect(rows[0].id).toBe("10");
+    expect(rows[0]).toMatchObject({
+      userId: 7,
+      userEmail: "student@example.com",
+      userName: "학생",
+    });
     expect(rows[0].logs[0]).toMatchObject({
       id: "5",
       action: "confirmed_abuse",

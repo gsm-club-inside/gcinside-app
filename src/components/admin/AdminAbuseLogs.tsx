@@ -51,6 +51,8 @@ interface AbuseDecisionRecord {
   id: string;
   requestId: string;
   userId: number | null;
+  userEmail: string | null;
+  userName: string | null;
   sessionId: string | null;
   ipHash: string | null;
   deviceHash: string | null;
@@ -103,6 +105,8 @@ function reasonCodes(reasons: unknown): string[] {
 }
 
 function subjectLabel(record: AbuseDecisionRecord) {
+  if (record.userEmail) return record.userEmail;
+  if (record.userName) return record.userName;
   if (record.userId) return `user #${record.userId}`;
   if (record.sessionId) return `session ${record.sessionId.slice(0, 10)}`;
   if (record.ipHash) return `ip ${record.ipHash.slice(0, 10)}`;
