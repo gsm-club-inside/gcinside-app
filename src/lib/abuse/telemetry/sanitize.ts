@@ -19,6 +19,8 @@ export function sanitizeTelemetry(input: unknown): ClientTelemetry {
     focusCount: num(i.focusCount, 1000),
     blurCount: num(i.blurCount, 1000),
     pointerMoveCount: num(i.pointerMoveCount, 100_000),
+    pointerDownCount: num(i.pointerDownCount, 100_000),
+    clickCount: num(i.clickCount, 100_000),
     pointerDistance: num(i.pointerDistance, 1e9),
     scrollCount: num(i.scrollCount, 10_000),
     visibilityChangeCount: num(i.visibilityChangeCount, 1000),

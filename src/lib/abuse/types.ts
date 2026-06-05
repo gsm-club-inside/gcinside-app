@@ -34,6 +34,8 @@ export interface ClientTelemetry {
   focusCount?: number;
   blurCount?: number;
   pointerMoveCount?: number;
+  pointerDownCount?: number;
+  clickCount?: number;
   pointerDistance?: number;
   scrollCount?: number;
   visibilityChangeCount?: number;

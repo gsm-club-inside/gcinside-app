@@ -9,6 +9,8 @@ interface TelemetryState {
   focusCount: number;
   blurCount: number;
   pointerMoveCount: number;
+  pointerDownCount: number;
+  clickCount: number;
   pointerDistance: number;
   scrollCount: number;
   visibilityChangeCount: number;
@@ -33,6 +35,8 @@ export function createTelemetryCollector(): TelemetryHandle {
     focusCount: 0,
     blurCount: 0,
     pointerMoveCount: 0,
+    pointerDownCount: 0,
+    clickCount: 0,
     pointerDistance: 0,
     scrollCount: 0,
     visibilityChangeCount: 0,
@@ -68,6 +72,12 @@ export function createTelemetryCollector(): TelemetryHandle {
     }
     state.lastPointer = { x: e.clientX, y: e.clientY };
   };
+  const onPointerDown = () => {
+    state.pointerDownCount++;
+  };
+  const onClick = () => {
+    state.clickCount++;
+  };
   const onScroll = () => {
     state.scrollCount++;
   };
@@ -81,6 +91,8 @@ export function createTelemetryCollector(): TelemetryHandle {
     target.addEventListener("focusin", onFocusIn as EventListener, { passive: true });
     target.addEventListener("focusout", onFocusOut as EventListener, { passive: true });
     target.addEventListener("pointermove", onPointerMove as EventListener, { passive: true });
+    target.addEventListener("pointerdown", onPointerDown as EventListener, { passive: true });
+    target.addEventListener("click", onClick as EventListener, { passive: true });
     target.addEventListener("scroll", onScroll as EventListener, { passive: true });
     document.addEventListener("visibilitychange", onVisibility, { passive: true });
     return () => {
@@ -89,6 +101,8 @@ export function createTelemetryCollector(): TelemetryHandle {
       target.removeEventListener("focusin", onFocusIn as EventListener);
       target.removeEventListener("focusout", onFocusOut as EventListener);
       target.removeEventListener("pointermove", onPointerMove as EventListener);
+      target.removeEventListener("pointerdown", onPointerDown as EventListener);
+      target.removeEventListener("click", onClick as EventListener);
       target.removeEventListener("scroll", onScroll as EventListener);
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -112,6 +126,8 @@ export function createTelemetryCollector(): TelemetryHandle {
       focusCount: state.focusCount,
       blurCount: state.blurCount,
       pointerMoveCount: state.pointerMoveCount,
+      pointerDownCount: state.pointerDownCount,
+      clickCount: state.clickCount,
       pointerDistance: Math.round(state.pointerDistance),
       scrollCount: state.scrollCount,
       visibilityChangeCount: state.visibilityChangeCount,
@@ -127,6 +143,8 @@ export function createTelemetryCollector(): TelemetryHandle {
     state.focusCount = 0;
     state.blurCount = 0;
     state.pointerMoveCount = 0;
+    state.pointerDownCount = 0;
+    state.clickCount = 0;
     state.pointerDistance = 0;
     state.scrollCount = 0;
     state.visibilityChangeCount = 0;

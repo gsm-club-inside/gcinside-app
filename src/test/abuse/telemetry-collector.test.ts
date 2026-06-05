@@ -30,6 +30,8 @@ describe("telemetry collector (browser)", () => {
     fire(input, "focusout");
     fire(input, "pointermove", { clientX: 0, clientY: 0 });
     fire(input, "pointermove", { clientX: 3, clientY: 4 }); // distance += 5
+    fire(input, "pointerdown");
+    fire(input, "click");
     fire(input, "scroll");
     fire(document, "visibilitychange");
 
@@ -39,6 +41,8 @@ describe("telemetry collector (browser)", () => {
     expect(snap.focusCount).toBe(1);
     expect(snap.blurCount).toBe(1);
     expect(snap.pointerMoveCount).toBe(2);
+    expect(snap.pointerDownCount).toBe(1);
+    expect(snap.clickCount).toBe(1);
     expect(snap.pointerDistance).toBe(5);
     expect(snap.scrollCount).toBe(1);
     expect(snap.visibilityChangeCount).toBe(1);
@@ -50,6 +54,8 @@ describe("telemetry collector (browser)", () => {
 
     c.reset();
     expect(c.snapshot().keydownCount).toBe(0);
+    expect(c.snapshot().pointerDownCount).toBe(0);
+    expect(c.snapshot().clickCount).toBe(0);
     expect(c.snapshot().pasteUsed).toBe(false);
 
     document.body.removeChild(root);

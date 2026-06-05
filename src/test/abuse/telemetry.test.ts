@@ -7,9 +7,16 @@ describe("telemetry sanitizer", () => {
   });
 
   it("clamps absurdly large values", () => {
-    const t = sanitizeTelemetry({ submitElapsedMs: 10 ** 12, pointerMoveCount: -5 });
+    const t = sanitizeTelemetry({
+      submitElapsedMs: 10 ** 12,
+      pointerMoveCount: -5,
+      pointerDownCount: 2,
+      clickCount: 2,
+    });
     expect(t.submitElapsedMs).toBeLessThanOrEqual(24 * 60 * 60_000);
     expect(t.pointerMoveCount).toBe(0);
+    expect(t.pointerDownCount).toBe(2);
+    expect(t.clickCount).toBe(2);
   });
 
   it("ignores extra unknown fields", () => {
