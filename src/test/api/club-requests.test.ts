@@ -14,6 +14,9 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
     club: {
       create: vi.fn(),
     },
@@ -63,6 +66,7 @@ const mockRequest = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  (prisma.user.findUnique as Mock).mockResolvedValue({ id: 2 });
 });
 
 describe("GET /api/club-requests", () => {
@@ -112,6 +116,28 @@ describe("POST /api/club-requests", () => {
         data: expect.objectContaining({ requesterId: 2, name: "영상제작부" }),
       })
     );
+  });
+
+  it("세션 사용자 없음 → 401", async () => {
+    const destroy = vi.fn();
+    (getSession as Mock).mockResolvedValue({ ...studentSession, destroy });
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
+
+    const req = new NextRequest("http://localhost/api/club-requests", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "영상제작부",
+        description: "영상 제작",
+        grade1Capacity: 4,
+        grade23Capacity: 8,
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(401);
+    expect(destroy).toHaveBeenCalled();
+    expect(prisma.clubCreationRequest.create).not.toHaveBeenCalled();
   });
 });
 

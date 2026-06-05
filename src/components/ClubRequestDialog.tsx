@@ -55,6 +55,11 @@ const statusVariant: Record<RequestStatus, "default" | "secondary" | "destructiv
   REJECTED: "destructive",
 };
 
+async function readApiError(res: Response, fallback: string) {
+  const data = (await res.json().catch(() => null)) as { error?: string } | null;
+  return data?.error ?? fallback;
+}
+
 export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState(emptyForm);
@@ -62,7 +67,15 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
 
   const { data: requests = [], isLoading } = useQuery<ClubCreationRequest[]>({
     queryKey: ["club-requests"],
-    queryFn: () => fetch("/api/club-requests").then((r) => r.json()),
+    queryFn: async () => {
+      const res = await fetch("/api/club-requests");
+      if (res.status === 401) {
+        window.location.href = "/api/auth/login";
+        throw new Error(await readApiError(res, "로그인이 만료되었습니다."));
+      }
+      if (!res.ok) throw new Error(await readApiError(res, "요청 목록을 불러오지 못했습니다."));
+      return res.json();
+    },
     enabled: isLoggedIn && isDialogOpen,
     staleTime: 30_000,
   });
@@ -74,8 +87,12 @@ export default function ClubRequestDialog({ isLoggedIn }: { isLoggedIn: boolean 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }).then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "요청을 저장하지 못했습니다.");
+        const data = await res.json().catch(() => null);
+        if (res.status === 401) {
+          window.location.href = "/api/auth/login";
+          throw new Error(data?.error ?? "로그인이 만료되었습니다.");
+        }
+        if (!res.ok) throw new Error(data?.error ?? "요청을 저장하지 못했습니다.");
         return data;
       }),
     onSuccess: () => {
